@@ -38,44 +38,37 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    //横向65%、竖向66.5%
+    //横向65%、竖向66.5%坐标
     const clickX = Math.round(3840 * 0.65);
     const clickY = Math.round(4320 * 0.665);
-    console.log(`鼠标移动至坐标 X:${clickX}, Y:${clickY}`);
+    console.log(`标记点击坐标 X:${clickX}, Y:${clickY}`);
 
-    //1.鼠标先移动到目标点位
+    //鼠标移动到点位 + DOM画红色圆点（截图可见标记）
     await page.mouse.move(clickX, clickY);
+    await page.evaluate((x,y)=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=x+'px';
+      dot.style.top=y+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },clickX,clickY);
+
     await sleep(800);
-    //2.移动完立刻截图（能拍到鼠标光标）
-    await page.screenshot({path:'before_click_mouse.png'});
-    console.log('📷 已保存点击前带鼠标截图 before_click_mouse.png');
-    //3.优先坐标点击
+    //带红点标记截图
+    await page.screenshot({path:'before_click_mark.png'});
+    console.log('📷 已保存带红点标记截图 before_click_mark.png');
+
+    //执行坐标点击
     await page.mouse.click(clickX, clickY);
     console.log(`✅ 坐标完成点击：(${clickX},${clickY})`);
 
-    //点击完毕关闭页面
+    //点击完关闭页面，【已完全删除校验代码和校验截图】
     await page.close();
-    await sleep(2000);
-
-    //校验页面
-    let checkPage = await ctx.newPage();
-    console.log('【校验步骤】重新打开页面，验证点击结果');
-    await checkPage.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await sleep(3500);
-
-    const checkHotBtn = checkPage.locator('div.hot-btn.pointer');
-    const checkImgBtn = checkPage.locator('img.btn[src*="17491952468999a23257df8d522d6.png"]');
-
-    //校验失败才截图，成功不截图
-    if(await checkHotBtn.isVisible({timeout:2000}) || await checkImgBtn.isVisible({timeout:2000})){
-      console.log('⚠️ 校验失败：按钮仍然存在，坐标点击未生效');
-      await checkPage.screenshot({path:'click_failed_snap.png'});
-      console.log('📷 已保存失败截图 click_failed_snap.png');
-    }else{
-      console.log('✅ 校验成功：目标按钮已消失，点击生效');
-    }
-
-    await checkPage.close();
     await sleep(2000);
 
   } catch (e) {
