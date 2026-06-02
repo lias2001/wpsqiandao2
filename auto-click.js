@@ -38,35 +38,52 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    //横向65%、竖向66.5%坐标
-    const clickX = Math.round(3840 * 0.65);
-    const clickY = Math.round(4320 * 0.665);
-    console.log(`标记点击坐标 X:${clickX}, Y:${clickY}`);
+    // 点位列表
+    const posList = [
+      {x:1290,y:2515,name:'pos1_1290'},
+      {x:1435,y:2515,name:'pos2_1435'},
+      {x:1585,y:2515,name:'pos3_1585'},
+      {x:1735,y:2515,name:'pos4_1735'},
+      {x:1885,y:2515,name:'pos5_1885'},
+      {x:2030,y:2515,name:'pos6_2030'},
+      {x:2180,y:2515,name:'pos7_2180'},
+      {x:2450,y:2515,name:'pos8_2450'}
+    ];
 
-    await page.mouse.move(clickX, clickY);
-    // 修正：参数打包为对象，解决Too many arguments报错
-    await page.evaluate(({x,y})=>{
-      const dot = document.createElement('div');
-      dot.style.position='fixed';
-      dot.style.left=x+'px';
-      dot.style.top=y+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{x:clickX,y:clickY});
+    // 逐个移动、画红点、截图
+    for(const item of posList){
+      const {x,y,name} = item;
+      await page.mouse.move(x, y);
+      //绘制红点
+      await page.evaluate(({px,py})=>{
+        const dot = document.createElement('div');
+        dot.style.position='fixed';
+        dot.style.left=px+'px';
+        dot.style.top=py+'px';
+        dot.style.width='22px';
+        dot.style.height='22px';
+        dot.style.background='red';
+        dot.style.borderRadius='50%';
+        dot.style.zIndex='9999999';
+        document.body.appendChild(dot);
+      },{px:x,py:y});
+      await sleep(600);
+      await page.screenshot({path:`${name}.png`});
+      console.log(`📷 已保存 ${name}.png 红点截图`);
+    }
 
-    await sleep(800);
-    await page.screenshot({path:'before_click_mark.png'});
-    console.log('📷 已保存带红点标记截图 before_click_mark.png');
+    //最终点击最后点位
+    const finalX = 2450;
+    const finalY = 2515;
+    await page.mouse.click(finalX, finalY);
+    console.log(`✅ 完成最终点击 (${finalX},${finalY})`);
 
-    await page.mouse.click(clickX, clickY);
-    console.log(`✅ 坐标完成点击：(${clickX},${clickY})`);
-
-    await page.close();
+    //点击后刷新页面
+    await page.reload({waitUntil:'domcontentloaded'});
+    console.log('🔄 点击完毕执行页面刷新');
     await sleep(2000);
+    await page.close();
+    console.log('✅ 等待2秒后关闭页面');
 
   } catch (e) {
     console.error('运行异常：', e.message);
