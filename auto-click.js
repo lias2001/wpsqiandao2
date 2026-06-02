@@ -61,8 +61,8 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log(`✅ 点击(${x1},${y1})，等待2秒`);
     await sleep(2000);
 
-    //第二个坐标970,1580：清红点→移动→红点→截图→点击
-    const x2=970,y2=1580;
+    //第二个坐标770,1580：清红点→移动→红点→截图→点击
+    const x2=770,y2=1580;
     await page.evaluate(()=>{
       document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
     });
@@ -80,8 +80,8 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       document.body.appendChild(dot);
     },{px:x2,py:y2});
     await sleep(500);
-    await page.screenshot({path:'pre_click_970_1580.png', omitBackground:true});
-    console.log(`📷 保存截图 pre_click_970_1580.png`);
+    await page.screenshot({path:'pre_click_770_1580.png', omitBackground:true});
+    console.log(`📷 保存截图 pre_click_770_1580.png`);
 
     await page.mouse.move(x2,y2);
     await page.mouse.down();
