@@ -15,7 +15,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    // 步骤1：初次打开加载cookie后关闭
+    // 步骤1：第一次打开，加载登录态后关闭
     let page1 = await ctx.newPage();
     console.log('【步骤1】首次打开页面加载登录Cookie');
     await page1.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -23,9 +23,18 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('【步骤1】关闭页面，等待2秒');
     await sleep(2000);
 
-    // 步骤2：二次打开页面
+    // 步骤2：第二次打开→等2s→关页→再等2s
+    let page2 = await ctx.newPage();
+    console.log('【步骤2】第二次打开页面');
+    await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(2000);
+    await page2.close();
+    console.log('【步骤2】关闭页面，再等待2秒');
+    await sleep(2000);
+
+    // 步骤3：第三次打开，滚动+识别按钮点击
     let page = await ctx.newPage();
-    console.log('【步骤2】第二次打开目标页面');
+    console.log('【步骤3】第三次打开目标页面，准备查找按钮');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
@@ -57,12 +66,13 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log('❌ 两个按钮均未找到，不执行任何点击');
     }
 
+    // 点击后刷新，等待2秒
     if (clicked) {
       await page.reload({ waitUntil: 'domcontentloaded' });
-      console.log('【步骤3】点击完成，页面刷新');
+      console.log('【步骤4】点击完成，页面刷新');
     }
     await sleep(2000);
-    console.log('【步骤4】等待完毕，准备关闭');
+    console.log('【步骤5】等待完毕，准备关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
