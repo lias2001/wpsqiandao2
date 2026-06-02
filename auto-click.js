@@ -9,13 +9,13 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     args: ['--no-sandbox','--disable-dev-shm-usage']
   });
   const ctx = await browser.newContext({
-    viewport:{width:1400,height:2877}, // 修改分辨率1400*2877
+    viewport:{width:1400,height:2877}, //分辨率1400x2877
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
   });
   await ctx.addCookies(COOKIES);
 
   try {
-    //合并步骤：四轮页面循环：开页→等2s→刷新→等2s→关页→等2s
+    //四轮初始化：开页→等2s→刷新→等2s→关页→等2s
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -29,25 +29,21 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
     console.log('【四轮初始化全部结束】');
 
-    //====步骤3全新逻辑====
+    //步骤3
     let page = await ctx.newPage();
     console.log('\n【步骤3】打开业务页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    //JS筛选：仅自身原生cursor:pointer，排除继承+边界过滤
+    //沿用你能正常筛选的原生JS代码，只保留尺寸过滤
     const pointerCoordList = await page.evaluate(()=>{
       const allDom = Array.from(document.querySelectorAll('*'));
       const res = [];
       allDom.forEach(el=>{
-        //el.style.cursor：元素自身行内样式，排除继承样式
-        const ownCursor = el.style.cursor;
-        const finalCursor = getComputedStyle(el).cursor;
-        //自身原生设置pointer/hand 且最终渲染小手
-        if((ownCursor === 'pointer' || ownCursor === 'hand') && (finalCursor === 'pointer' || finalCursor === 'hand')){
+        const cssCursor = getComputedStyle(el).cursor;
+        if(cssCursor === 'pointer' || cssCursor === 'hand'){
           const rect = el.getBoundingClientRect();
-          //边界+尺寸过滤，剔除页面外/极小无效元素
-          if(rect.width>5 && rect.height>5 && rect.x>=0 && rect.y>=0 && rect.x<window.innerWidth && rect.y<window.innerHeight){
+          if(rect.width>2 && rect.height>2){
             res.push({
               x: Math.round(rect.x + rect.width/2),
               y: Math.round(rect.y + rect.height/2)
@@ -60,14 +56,14 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     console.log(`✅ 筛选到手型可点击区域总数：${pointerCoordList.length}`);
 
-    //只截图：前3个(下标0,1,2) + 序号105~110(下标104~109)
+    //截图规则：前3个(下标0,1,2) + 105~110(下标104~109)
     for(let idx=0; idx<pointerCoordList.length; idx++){
       const {x,y} = pointerCoordList[idx];
-      const needCapture = (idx < 3) || (idx >=104 && idx <=109);
-      console.log(`元素${idx+1} X:${x},Y:${y} ${needCapture ? '【需要截图】' : '【跳过】'}`);
-      if(!needCapture) continue;
+      const needShot = (idx < 3) || (idx >= 104 && idx <= 109);
+      console.log(`手型区域${idx+1} X:${x}, Y:${y} ${needShot?'【截图】':'【跳过】'}`);
+      if(!needShot) continue;
 
-      //清空历史红点
+      //清除旧红点
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
@@ -94,7 +90,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
 
     await page.close();
-    console.log('✅【步骤3】全部执行完毕，页面关闭');
+    console.log('✅【步骤3】执行完毕，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
