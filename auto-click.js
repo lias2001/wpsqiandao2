@@ -38,23 +38,22 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    // 按你指定的全部坐标点位
+    // 自定义坐标序列
     const posList = [
-      {x:948,y:1872,name:'pos1_948'},
-      {x:1098,y:1872,name:'pos2_1098'},
-      {x:1248,y:1872,name:'pos3_1248'},
-      {x:1398,y:1872,name:'pos4_1398'},
-      {x:1548,y:1872,name:'pos5_1548'},
-      {x:1698,y:1872,name:'pos6_1698'},
-      {x:1848,y:1872,name:'pos7_1848'},
-      {x:2113,y:1872,name:'pos8_2113'}
+      {x:1027,y:2002,name:'pos1_1027'},
+      {x:1142,y:2002,name:'pos2_1142'},
+      {x:1262,y:2002,name:'pos3_1262'},
+      {x:1381,y:2002,name:'pos4_1381'},
+      {x:1500,y:2002,name:'pos5_1500'},
+      {x:1616,y:2002,name:'pos6_1616'},
+      {x:1736,y:2002,name:'pos7_1736'},
+      {x:1950,y:2002,name:'pos8_1950'}
     ];
 
-    // 逐个移动、画红点、截图
+    //逐个移动、画红点、截图
     for(const item of posList){
       const {x,y,name} = item;
       await page.mouse.move(x, y);
-      //绘制红色标记圆点
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -69,21 +68,21 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       },{px:x,py:y});
       await sleep(600);
       await page.screenshot({path:`${name}.png`});
-      console.log(`📷 已保存 ${name}.png 红点标记截图`);
+      console.log(`📷 已保存 ${name}.png`);
     }
 
-    // 最终在2113,1872点击
-    const clickX = 2113;
-    const clickY = 1872;
+    //末尾点位点击
+    const clickX = 1950;
+    const clickY = 2002;
     await page.mouse.click(clickX, clickY);
-    console.log(`✅ 执行目标点位点击 (${clickX},${clickY})`);
+    console.log(`✅ 点击目标坐标(${clickX},${clickY})`);
 
-    //点击后刷新、等待2秒关闭
+    //点击后刷新、延时关闭
     await page.reload({waitUntil:'domcontentloaded'});
-    console.log('🔄 点击完成，页面刷新');
+    console.log('🔄 页面已刷新');
     await sleep(2000);
     await page.close();
-    console.log('✅ 等待完毕关闭页面');
+    console.log('✅ 页面关闭完成');
 
   } catch (e) {
     console.error('运行异常：', e.message);
