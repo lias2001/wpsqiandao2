@@ -32,30 +32,23 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('【步骤2】关闭页面，再等待2秒');
     await sleep(2000);
 
-    //步骤3：第三次打开页面，查找并点击按钮
+    //步骤3：第三次打开页面，优先坐标点击红框按钮
     let page = await ctx.newPage();
-    console.log('【步骤3】第三次打开目标页面，准备查找hot-btn立即解锁按钮');
+    console.log('【步骤3】第三次打开目标页面，优先使用固定坐标点击立即解锁');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
+    //红框中心点：3840*4320分辨率 X=2573 Y=2635
+    const clickX = 2573;
+    const clickY = 2635;
     const targetBtn = page.locator('div.hot-btn.pointer');
     const btnImg = page.locator('img.btn[src*="17491952468999a23257df8d522d6.png"]');
     let clicked = false;
 
-    // 识别按钮、点击，识别阶段不截图
-    if (await targetBtn.isVisible({timeout:3500})) {
-      const domEl = await targetBtn.elementHandle();
-      await page.evaluate(el => el.click(), domEl);
-      console.log('✅ 执行点击：div.hot-btn.pointer【立即解锁】按钮');
-      clicked = true;
-    }else if (await btnImg.isVisible({timeout:2500})) {
-      const domEl = await btnImg.elementHandle();
-      await page.evaluate(el => el.click(), domEl);
-      console.log('✅ 执行点击：备用图片按钮');
-      clicked = true;
-    }else {
-      console.log('❌ 未找到任意目标按钮');
-    }
+    //优先固定坐标点击，DOM选择器仅作备选
+    await page.mouse.click(clickX, clickY);
+    console.log(`✅ 优先坐标点击：(${clickX},${clickY}) 红框立即解锁按钮`);
+    clicked = true;
 
     // 点击完成关闭当前页面
     await page.close();
@@ -72,11 +65,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // 按钮仍存在 → 点击失败，提示+截图
     if(await checkHotBtn.isVisible({timeout:2000}) || await checkImgBtn.isVisible({timeout:2000})){
-      console.log('⚠️ 校验失败：按钮仍然存在，上一轮点击未生效');
+      console.log('⚠️ 校验失败：按钮仍然存在，上一轮坐标点击未生效');
       await checkPage.screenshot({path:'click_failed_snap.png'});
       console.log('📷 已保存失败截图 click_failed_snap.png');
     }else{
-      console.log('✅ 校验成功：目标按钮已消失，点击生效');
+      console.log('✅ 校验成功：目标按钮已消失，坐标点击生效');
     }
 
     await checkPage.close();
