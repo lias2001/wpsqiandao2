@@ -15,7 +15,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    //四轮初始化流程不变
+    // 合并原步骤1+2：四轮【开页-等2s-刷新-等2s-关页-等2s】
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -29,15 +29,15 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
     console.log('【四轮初始化全部结束】');
 
-    //步骤3
+    // =====全新步骤3=====
     let page = await ctx.newPage();
     console.log('\n【步骤3】打开业务页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
+    // ①1950,2002：移鼠标→红点→截图→点击
     const clickX = 1950;
     const clickY = 2002;
-    //新增：先移动→红点→截图，再点击
     await page.mouse.move(clickX, clickY);
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
@@ -52,74 +52,39 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       document.body.appendChild(dot);
     },{px:clickX,py:clickY});
     await sleep(500);
-    await page.screenshot({
-      path:'before_click_1950_2002.png',
-      omitBackground:true
-    });
-    console.log(`📷 点击前已保存截图 before_click_1950_2002.png`);
+    await page.screenshot({path:'before_click_1950_2002.png', omitBackground:true});
+    console.log(`📷 保存点击前截图 before_click_1950_2002.png`);
 
-    //再执行点击
     await page.mouse.click(clickX, clickY);
-    console.log(`✅ 点击(${clickX},${clickY})，等待2秒`);
+    console.log(`✅ 已点击(${clickX},${clickY})，等待2秒`);
     await sleep(2000);
 
-    //筛选真实手型元素
-    const pointerCoordList = await page.evaluate(()=>{
-      const allDom = Array.from(document.querySelectorAll('*'));
-      const res = [];
-      allDom.forEach(el=>{
-        const ownStyle = el.style.cursor;
-        const computedCursor = getComputedStyle(el).cursor;
-        if((ownStyle === 'pointer' || ownStyle === 'hand') && (computedCursor === 'pointer' || computedCursor === 'hand')){
-          const rect = el.getBoundingClientRect();
-          if(rect.width>5 && rect.height>5 && rect.x>0 && rect.y>0 && rect.x<window.innerWidth && rect.y<window.innerHeight){
-            res.push({
-              x: Math.round(rect.x + rect.width/2),
-              y: Math.round(rect.y + rect.height/2)
-            });
-          }
-        }
-      });
-      return res;
+    // ②移动到1568,1811、红点截图
+    const secX = 1568;
+    const secY = 1811;
+    await page.mouse.move(secX, secY);
+    await page.evaluate(()=>{
+      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
     });
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:secX,py:secY});
+    await sleep(500);
+    await page.screenshot({path:'pos_1568_1811.png', omitBackground:true});
+    console.log(`📷 保存点位截图 pos_1568_1811.png`);
 
-    console.log(`✅ 筛选到手型可点击区域总数：${pointerCoordList.length}`);
-
-    for(let idx=0; idx<pointerCoordList.length; idx++){
-      const {x,y} = pointerCoordList[idx];
-      //只截图：前3个(0,1,2) + 104~109(数组下标对应105~110序号)
-      const needShot = (idx < 3) || (idx >= 104 && idx <= 109);
-      console.log(`手型区域${idx+1} X:${x}, Y:${y} ${needShot ? '【需要截图】' : '【跳过截图】'}`);
-
-      if(!needShot) continue;
-
-      await page.evaluate(()=>{
-        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
-      });
-      await page.mouse.move(x,y);
-      await page.evaluate(({px,py})=>{
-        const dot = document.createElement('div');
-        dot.style.position='fixed';
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        dot.style.width='22px';
-        dot.style.height='22px';
-        dot.style.background='red';
-        dot.style.borderRadius='50%';
-        dot.style.zIndex='9999999';
-        document.body.appendChild(dot);
-      },{px:x,py:y});
-
-      await sleep(500);
-      await page.screenshot({
-        path:`pointer_${idx+1}_${x}_${y}.png`,
-        omitBackground:true
-      });
-      console.log(`📷 已保存 pointer_${idx+1}_${x}_${y}.png`);
-    }
-
+    // 直接关闭页面，不再筛选小手元素
     await page.close();
-    console.log('✅ 步骤3完成，页面关闭');
+    console.log('✅【步骤3】执行完毕，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
