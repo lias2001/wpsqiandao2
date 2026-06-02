@@ -15,38 +15,60 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    //步骤1：首次开页加载cookie → 关闭等2s
-    let page1 = await ctx.newPage();
-    console.log('【步骤1】首次打开页面加载登录Cookie');
-    await page1.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page1.close();
-    console.log('【步骤1】关闭页面，等待2秒');
+    //=====【合并原步骤1+步骤2：四轮开页-刷新-关页循环】=====
+    console.log('【合并步骤：开始四轮页面加载刷新流程】');
+    for(let round=0; round<4; round++){
+      console.log(`\n====第${round+1}轮页面加载====`);
+      let pageTmp = await ctx.newPage();
+      await pageTmp.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      console.log(`第${round+1}轮：页面打开完成，等待2s`);
+      await sleep(2000);
+
+      await pageTmp.reload({waitUntil:'domcontentloaded'});
+      console.log(`第${round+1}轮：页面刷新完成，等待2s`);
+      await sleep(2000);
+
+      await pageTmp.close();
+      console.log(`第${round+1}轮：页面关闭，等待2s`);
+      await sleep(2000);
+    }
+    console.log('【合并步骤：四轮页面循环全部结束】');
+
+    //=====【全新步骤3：打开页面→等待→点击1950,2002→筛选cursor:pointer元素→逐个红点截图】=====
+    let page = await ctx.newPage();
+    console.log('\n【步骤3】正式打开目标页面');
+    await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    //步骤2：第二次打开页面，同时识别a链接+button按钮
-    let page2 = await ctx.newPage();
-    console.log('【步骤2】第二次打开页面');
-    await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    //固定坐标点击 1950,2002
+    const clickX = 1950;
+    const clickY = 2002;
+    await page.mouse.click(clickX, clickY);
+    console.log(`✅ 已点击坐标(${clickX},${clickY})，等待2秒渲染页面`);
     await sleep(2000);
 
-    //选择器：a超链接 + button按钮
-    const clickableList = await page2.locator('a,button').all();
-    console.log(`【步骤2】页面一共检测到可点击(a+button)总数：${clickableList.length}`);
-    for(let i=0;i<clickableList.length;i++){
-      const el = clickableList[i];
+    //筛选：hover鼠标变成手型 cursor:pointer 的所有元素(a/button/div等)
+    const pointerEls = await page.locator('*').filter({
+      has: page.locator('xpath=./self::*[contains(@style,"cursor:pointer") or contains(@style,"cursor: hand")]')
+    }).all();
+    console.log(`【步骤3】页面检测到手型可点击元素总数：${pointerEls.length}`);
+
+    for(let idx=0; idx<pointerEls.length; idx++){
+      const el = pointerEls[idx];
       const box = await el.boundingBox();
       if(!box) continue;
       const cx = Math.round(box.x + box.width/2);
       const cy = Math.round(box.y + box.height/2);
-      console.log(`可点击元素${i+1} 中心点坐标：X=${cx}, Y=${cy}`);
+      console.log(`手型元素${idx+1} 中心点：X=${cx}, Y=${cy}`);
 
-      //清除上一轮红点
-      await page2.evaluate(()=>{
+      //清理历史红点
+      await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
-      await page2.mouse.move(cx, cy);
-      //绘制红点标记
-      await page2.evaluate(({px,py})=>{
+      //鼠标移动到中心
+      await page.mouse.move(cx, cy);
+      //绘制红色圆点标记
+      await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
         dot.style.left=px+'px';
@@ -59,119 +81,17 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         document.body.appendChild(dot);
       },{px:cx,py:cy});
       await sleep(500);
-      //omitBackground跳过字体等待，防超时
-      await page2.screenshot({
-        path:`elem_${i+1}_${cx}_${cy}.png`,
+      //截图（omitBackground防超时）
+      await page.screenshot({
+        path:`pointer_${idx+1}_${cx}_${cy}.png`,
         omitBackground:true
       });
-      console.log(`📷 已保存元素${i+1}截图 elem_${i+1}_${cx}_${cy}.png`);
+      console.log(`📷 已保存截图 pointer_${idx+1}_${cx}_${cy}.png`);
     }
 
-    await page2.close();
-    console.log('【步骤2】全部可点击元素遍历完毕，关闭页面，再等待2秒');
-    await sleep(2000);
-
-    //步骤3：第三次打开页面
-    let page = await ctx.newPage();
-    console.log('【步骤3】第三次打开目标页面');
-    await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await sleep(4500);
-
-    //前置：1596,1704 移动-红点-截图-点击
-    const preX = 1596;
-    const preY = 1704;
-    await page.mouse.move(preX, preY);
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:preX,py:preY});
-    await sleep(600);
-    await page.screenshot({path:'pre_1596_1704.png', omitBackground:true});
-    console.log(`📷 已保存前置点位截图 pre_1596_1704.png`);
-    await page.mouse.click(preX, preY);
-    console.log(`✅ 前置点位(${preX},${preY})点击完成`);
-    await sleep(1200);
-
-    //原有8个点位序列
-    const posList = [
-      {x:1027,y:2002,name:'pos1_1027'},
-      {x:1142,y:2002,name:'pos2_1142'},
-      {x:1262,y:2002,name:'pos3_1262'},
-      {x:1381,y:2002,name:'pos4_1381'},
-      {x:1500,y:2002,name:'pos5_1500'},
-      {x:1616,y:2002,name:'pos6_1616'},
-      {x:1736,y:2002,name:'pos7_1736'},
-      {x:1950,y:2002,name:'pos8_1950'}
-    ];
-    for(const item of posList){
-      const {x,y,name} = item;
-      await page.mouse.move(x, y);
-      await page.evaluate(({px,py})=>{
-        const dot = document.createElement('div');
-        dot.style.position='fixed';
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        dot.style.width='22px';
-        dot.style.height='22px';
-        dot.style.background='red';
-        dot.style.borderRadius='50%';
-        dot.style.zIndex='9999999';
-        document.body.appendChild(dot);
-      },{px:x,py:y});
-      await sleep(600);
-      await page.screenshot({path:`${name}.png`, omitBackground:true});
-      console.log(`📷 已保存 ${name}.png`);
-    }
-
-    //主按钮点击
-    const clickX = 1950;
-    const clickY = 2002;
-    await page.mouse.click(clickX, clickY);
-    console.log(`✅ 点击目标坐标(${clickX},${clickY})，等待弹窗加载`);
-    await sleep(2500);
-
-    //弹窗立即领取按钮
-    const receiveBtn = page.locator('button.main-btn:has-text("立即领取")');
-    if(await receiveBtn.isVisible({timeout:3000})){
-      const box = await receiveBtn.boundingBox();
-      const btnX = box.x + box.width/2;
-      const btnY = box.y + box.height/2;
-      await page.mouse.move(btnX, btnY);
-      await page.evaluate(({px,py})=>{
-        const dot = document.createElement('div');
-        dot.style.position='fixed';
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        dot.style.width='22px';
-        dot.style.height='22px';
-        dot.style.background='red';
-        dot.style.borderRadius='50%';
-        dot.style.zIndex='9999999';
-        document.body.appendChild(dot);
-      },{px:btnX,py:btnY});
-      await sleep(600);
-      await page.screenshot({path:'pop_receive_btn.png', omitBackground:true});
-      console.log('📷 弹窗立即领取按钮已截图 pop_receive_btn.png');
-      await receiveBtn.click();
-      console.log('✅ 弹窗【立即领取】点击完成');
-    }else{
-      console.log('ℹ️ 未弹出领取弹窗，跳过弹窗点击');
-    }
-
-    //刷新+延时关闭
-    await page.reload({waitUntil:'domcontentloaded'});
-    console.log('🔄 页面已刷新');
-    await sleep(2000);
+    //全部遍历完毕关闭页面
     await page.close();
-    console.log('✅ 页面关闭完成');
+    console.log('✅【步骤3】全部手型元素识别完毕，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
