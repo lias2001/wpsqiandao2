@@ -15,7 +15,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    //合并4轮：开页→等2s→刷新→等2s→关页→等2s
+    //四轮初始化流程不变
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -41,15 +41,16 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log(`✅ 点击(${clickX},${clickY})，等待2秒`);
     await sleep(2000);
 
-    //页面JS获取所有cursor:pointer手型元素
+    //筛选真实手型元素
     const pointerCoordList = await page.evaluate(()=>{
       const allDom = Array.from(document.querySelectorAll('*'));
       const res = [];
       allDom.forEach(el=>{
-        const cssCursor = getComputedStyle(el).cursor;
-        if(cssCursor === 'pointer' || cssCursor === 'hand'){
+        const ownStyle = el.style.cursor;
+        const computedCursor = getComputedStyle(el).cursor;
+        if((ownStyle === 'pointer' || ownStyle === 'hand') && (computedCursor === 'pointer' || computedCursor === 'hand')){
           const rect = el.getBoundingClientRect();
-          if(rect.width>2 && rect.height>2){
+          if(rect.width>5 && rect.height>5 && rect.x>0 && rect.y>0 && rect.x<window.innerWidth && rect.y<window.innerHeight){
             res.push({
               x: Math.round(rect.x + rect.width/2),
               y: Math.round(rect.y + rect.height/2)
@@ -61,16 +62,19 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     });
 
     console.log(`✅ 筛选到手型可点击区域总数：${pointerCoordList.length}`);
+
     for(let idx=0; idx<pointerCoordList.length; idx++){
       const {x,y} = pointerCoordList[idx];
-      console.log(`手型区域${idx+1} X:${x}, Y:${y}`);
+      //只截图：前3个(0,1,2) + 104~109(数组下标对应105~110序号)
+      const needShot = (idx < 3) || (idx >= 104 && idx <= 109);
+      console.log(`手型区域${idx+1} X:${x}, Y:${y} ${needShot ? '【需要截图】' : '【跳过截图】'}`);
 
-      //清空旧红点
+      if(!needShot) continue;
+
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
       await page.mouse.move(x,y);
-      //修复语法错误
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
