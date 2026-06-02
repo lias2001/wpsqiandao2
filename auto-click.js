@@ -43,9 +43,9 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     const clickY = Math.round(4320 * 0.665);
     console.log(`标记点击坐标 X:${clickX}, Y:${clickY}`);
 
-    //鼠标移动到点位 + DOM画红色圆点（截图可见标记）
     await page.mouse.move(clickX, clickY);
-    await page.evaluate((x,y)=>{
+    // 修正：参数打包为对象，解决Too many arguments报错
+    await page.evaluate(({x,y})=>{
       const dot = document.createElement('div');
       dot.style.position='fixed';
       dot.style.left=x+'px';
@@ -56,18 +56,15 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       dot.style.borderRadius='50%';
       dot.style.zIndex='9999999';
       document.body.appendChild(dot);
-    },clickX,clickY);
+    },{x:clickX,y:clickY});
 
     await sleep(800);
-    //带红点标记截图
     await page.screenshot({path:'before_click_mark.png'});
     console.log('📷 已保存带红点标记截图 before_click_mark.png');
 
-    //执行坐标点击
     await page.mouse.click(clickX, clickY);
     console.log(`✅ 坐标完成点击：(${clickX},${clickY})`);
 
-    //点击完关闭页面，【已完全删除校验代码和校验截图】
     await page.close();
     await sleep(2000);
 
