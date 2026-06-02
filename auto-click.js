@@ -35,60 +35,31 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    //第一个坐标 1123,2010：移动→红点→截图→点击
-    const x1=1123,y1=2010;
-    await page.mouse.move(x1,y1);
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:x1,py:y1});
-    await sleep(500);
-    await page.screenshot({path:'pre_click_1123_2010.png', omitBackground:true});
-    console.log(`📷 保存截图 pre_click_1123_2010.png`);
+    //按你要求完整点位顺序
+    const clickList = [
+      {x:1123,y:2010,name:'A'},
+      {x:770,y:1580,name:'B'},
+      {x:180,y:2000,name:'C'},
+      {x:300,y:2000,name:'D'},
+      {x:420,y:2000,name:'E'},
+      {x:540,y:2000,name:'F'},
+      {x:660,y:2000,name:'G'},
+      {x:780,y:2000,name:'H'},
+      {x:900,y:2000,name:'I'},
+      {x:1123,y:2010,name:'A重复'},
+      {x:770,y:1580,name:'B重复'}
+    ];
 
-    await page.mouse.move(x1,y1);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ 点击(${x1},${y1})，等待2秒`);
-    await sleep(2000);
-
-    //第二个坐标770,1580：清红点→移动→红点→截图→点击
-    const x2=770,y2=1580;
-    await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
-    });
-    await page.mouse.move(x2,y2);
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:x2,py:y2});
-    await sleep(500);
-    await page.screenshot({path:'pre_click_770_1580.png', omitBackground:true});
-    console.log(`📷 保存截图 pre_click_770_1580.png`);
-
-    await page.mouse.move(x2,y2);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ 点击(${x2},${y2})，等待2秒`);
-    await sleep(2000);
+    for(const item of clickList){
+      const {x,y,name} = item;
+      await page.mouse.move(x,y);
+      //模拟真人长按点击
+      await page.mouse.down();
+      await sleep(300);
+      await page.mouse.up();
+      console.log(`✅${name} (${x},${y})点击完成，等待2秒`);
+      await sleep(2000);
+    }
 
     await page.close();
     console.log('✅【步骤3】全部执行完毕，页面关闭');
