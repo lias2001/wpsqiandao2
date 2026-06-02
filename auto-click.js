@@ -15,7 +15,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    //=====【合并步骤：4轮：开页→等2s→刷新→等2s→关页→等2s】=====
+    //合并4轮：开页→等2s→刷新→等2s→关页→等2s
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -29,29 +29,26 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
     console.log('【四轮初始化全部结束】');
 
-    //=====【步骤3】=====
+    //步骤3
     let page = await ctx.newPage();
     console.log('\n【步骤3】打开业务页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    //点击固定坐标1950,2002
     const clickX = 1950;
     const clickY = 2002;
     await page.mouse.click(clickX, clickY);
-    console.log(`✅ 点击(${clickX},${clickY})，等待弹窗/页面渲染2s`);
+    console.log(`✅ 点击(${clickX},${clickY})，等待2秒`);
     await sleep(2000);
 
-    //【改用页面内JS批量获取所有cursor:pointer手型元素（精准方案，绕开locator筛选bug）】
+    //页面JS获取所有cursor:pointer手型元素
     const pointerCoordList = await page.evaluate(()=>{
       const allDom = Array.from(document.querySelectorAll('*'));
       const res = [];
       allDom.forEach(el=>{
         const cssCursor = getComputedStyle(el).cursor;
-        //hover变手型：cursor=pointer / hand
         if(cssCursor === 'pointer' || cssCursor === 'hand'){
           const rect = el.getBoundingClientRect();
-          //过滤无效尺寸元素
           if(rect.width>2 && rect.height>2){
             res.push({
               x: Math.round(rect.x + rect.width/2),
@@ -63,18 +60,17 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       return res;
     });
 
-    console.log(`✅ 成功筛选到手型(pointer)可点击区域总数：${pointerCoordList.length}`);
-    //逐个移动、红点、截图
+    console.log(`✅ 筛选到手型可点击区域总数：${pointerCoordList.length}`);
     for(let idx=0; idx<pointerCoordList.length; idx++){
       const {x,y} = pointerCoordList[idx];
-      console.log(`手型区域${idx+1} 坐标 X:${x}, Y:${y}`);
+      console.log(`手型区域${idx+1} X:${x}, Y:${y}`);
 
-      //清空历史红点
+      //清空旧红点
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
       await page.mouse.move(x,y);
-      //画红点
+      //修复语法错误
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -86,7 +82,8 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.borderRadius='50%';
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
-      },{px:x,py:py:y});
+      },{px:x,py:y});
+
       await sleep(500);
       await page.screenshot({
         path:`pointer_${idx+1}_${x}_${y}.png`,
@@ -96,7 +93,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
 
     await page.close();
-    console.log('✅ 步骤3全部完成，页面关闭');
+    console.log('✅ 步骤3完成，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
