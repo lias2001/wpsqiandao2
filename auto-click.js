@@ -8,9 +8,9 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     headless: true,
     args: ['--no-sandbox','--disable-dev-shm-usage']
   });
-  // 分辨率改为3840×2160，取消页面滚动代码
+  // 修改分辨率 3840×4320，移除滚动代码
   const ctx = await browser.newContext({
-    viewport:{width:3840,height:2160},
+    viewport:{width:3840,height:4320},
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
   });
   await ctx.addCookies(COOKIES);
@@ -33,7 +33,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('【步骤2】关闭页面，再等待2秒');
     await sleep(2000);
 
-    // 步骤3：第三次打开页面，直接查找按钮（超大屏无需滚动）
+    // 步骤3：第三次打开页面，超大高屏无需滚动直接找按钮
     let page = await ctx.newPage();
     console.log('【步骤3】第三次打开目标页面，准备查找按钮');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
