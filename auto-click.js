@@ -15,7 +15,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    // 四轮初始化：开页→等2s→刷新→等2s→关页→等2s
+    //四轮初始化循环不变
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -35,9 +35,9 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    //1、1950,2002 移动→红点→截图→点击
     const clickX = 1950;
     const clickY = 2002;
+    //1.移动+红点+点击前截图
     await page.mouse.move(clickX, clickY);
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
@@ -55,15 +55,15 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.screenshot({path:'before_click_1950_2002.png', omitBackground:true});
     console.log(`📷 保存点击前截图 before_click_1950_2002.png`);
 
-    //真人分步点击：move+down+up
+    //【修复点击：长按式鼠标动作，延长按下时间，确保弹窗触发】
     await page.mouse.move(clickX, clickY);
     await page.mouse.down();
-    await sleep(80);
+    await sleep(300); //左键按住300ms，模拟真人长按点击，解决点击不生效不弹弹窗
     await page.mouse.up();
-    console.log(`✅ 点位(${clickX},${clickY})点击完成，等待2秒`);
+    console.log(`✅ 点位(${clickX},${clickY})点击完成，等待弹窗渲染2秒`);
     await sleep(2000);
 
-    //后续5个坐标列表
+    //弹窗出现后，依次5个坐标红点截图
     const posArr = [
       {x:1811,y:1568,name:'pos1_1811_1568'},
       {x:1761,y:1568,name:'pos2_1761_1568'},
@@ -72,9 +72,9 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       {x:1811,y:1618,name:'pos5_1811_1618'}
     ];
 
-    //逐个移动、清红点、画红点、截图
     for(let item of posArr){
       const {x,y,name} = item;
+      //清除历史红点
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
@@ -96,7 +96,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log(`📷 已保存 ${name}.png`);
     }
 
-    //全部结束关闭页面
     await page.close();
     console.log('✅【步骤3】执行完毕，页面关闭');
 
