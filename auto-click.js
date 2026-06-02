@@ -37,6 +37,28 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     const clickX = 1950;
     const clickY = 2002;
+    //新增：先移动→红点→截图，再点击
+    await page.mouse.move(clickX, clickY);
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:clickX,py:clickY});
+    await sleep(500);
+    await page.screenshot({
+      path:'before_click_1950_2002.png',
+      omitBackground:true
+    });
+    console.log(`📷 点击前已保存截图 before_click_1950_2002.png`);
+
+    //再执行点击
     await page.mouse.click(clickX, clickY);
     console.log(`✅ 点击(${clickX},${clickY})，等待2秒`);
     await sleep(2000);
