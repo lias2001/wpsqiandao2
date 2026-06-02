@@ -16,14 +16,12 @@ jobs:
         with:
           node-version: '20'
 
-      # 缓存npm依赖
       - name: Cache npm
         uses: actions/cache@v3
         with:
           path: node_modules
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
 
-      # 缓存pw浏览器，key绑定pw版本，版本变动自动重下
       - name: Cache PW Browser
         uses: actions/cache@v3
         with:
@@ -33,7 +31,6 @@ jobs:
       - name: Install npm
         run: npm ci
 
-      # 关键：统一安装 chromium（含headless-shell，不用单独chrome）
       - name: Install playwright chromium
         run: npx playwright install chromium --with-deps
 
@@ -41,3 +38,11 @@ jobs:
         env:
           WPS_COOKIES: ${{ secrets.WPS_COOKIES }}
         run: node auto-click.js
+
+      # ==========新增：上传截图文件为工件==========
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: wps-screenshot
+          path: |
+            *.png
