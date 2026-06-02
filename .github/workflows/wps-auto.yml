@@ -1,0 +1,50 @@
+name: WPS Auto Click
+on:
+  schedule:
+    # cron是UTC时区：北京时间 = UTC+8
+    # 北京时间 02:00 → UTC前一天18点
+    - cron: '0 18 * * *'
+    # 北京时间 02:30 → UTC前一天18:30
+    - cron: '30 18 * * *'
+  workflow_dispatch: # 手动一键运行
+
+jobs:
+  run_task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # 内置npm缓存键
+
+      # ========== 缓存1：npm依赖 node_modules ==========
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json','package.json') }}
+
+      # ========== 缓存2：Playwright浏览器安装目录 ==========
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pw-chrome-${{ hashFiles('package.json') }}
+
+      # 安装依赖，命中缓存则跳过下载
+      - name: Install npm dependencies
+        run: npm install
+
+      # 安装chrome，命中缓存直接跳过下载浏览器二进制
+      - name: Install Playwright Chrome
+        run: npx playwright install chrome --with-deps
+
+      # 执行自动点击脚本
+      - name: Run auto click script
+        env:
+          WPS_COOKIES: ${{ secrets.WPS_COOKIES }}
+        run: node auto-click.js
