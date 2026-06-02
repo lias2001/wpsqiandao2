@@ -9,13 +9,13 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     args: ['--no-sandbox','--disable-dev-shm-usage']
   });
   const ctx = await browser.newContext({
-    viewport:{width:1400,height:2877}, //分辨率1400x2877
+    viewport:{width:1400,height:2877},
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
   });
   await ctx.addCookies(COOKIES);
 
   try {
-    //四轮初始化：开页→等2s→刷新→等2s→关页→等2s
+    //合并四轮初始化：打开-等2s-刷新-等2s-关闭-等2s
     console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
       console.log(`\n====第${round+1}轮页面====`);
@@ -33,61 +33,56 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     let page = await ctx.newPage();
     console.log('\n【步骤3】打开业务页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(3000); //等待3秒
+
+    //第一个点位：1123,2010 移鼠→红点→截图→点击
+    const p1x = 1123, p1y = 2010;
+    await page.mouse.move(p1x,p1y);
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:p1x,py:p1y});
+    await sleep(500);
+    await page.screenshot({path:'pre_click_1123_2010.png', omitBackground:true});
+    console.log(`📷 已保存 pre_click_1123_2010.png`);
+
+    //模拟真人点击
+    await page.mouse.move(p1x,p1y);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ 点击(${p1x},${p1y})完成，等待2秒`);
     await sleep(2000);
 
-    //沿用你能正常筛选的原生JS代码，只保留尺寸过滤
-    const pointerCoordList = await page.evaluate(()=>{
-      const allDom = Array.from(document.querySelectorAll('*'));
-      const res = [];
-      allDom.forEach(el=>{
-        const cssCursor = getComputedStyle(el).cursor;
-        if(cssCursor === 'pointer' || cssCursor === 'hand'){
-          const rect = el.getBoundingClientRect();
-          if(rect.width>2 && rect.height>2){
-            res.push({
-              x: Math.round(rect.x + rect.width/2),
-              y: Math.round(rect.y + rect.height/2)
-            });
-          }
-        }
-      });
-      return res;
+    //第二个点位：970,1580 清红点→移动→红点→截图
+    const p2x = 970, p2y = 1580;
+    await page.evaluate(()=>{
+      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
     });
-
-    console.log(`✅ 筛选到手型可点击区域总数：${pointerCoordList.length}`);
-
-    //截图规则：前3个(下标0,1,2) + 105~110(下标104~109)
-    for(let idx=0; idx<pointerCoordList.length; idx++){
-      const {x,y} = pointerCoordList[idx];
-      const needShot = (idx < 3) || (idx >= 104 && idx <= 109);
-      console.log(`手型区域${idx+1} X:${x}, Y:${y} ${needShot?'【截图】':'【跳过】'}`);
-      if(!needShot) continue;
-
-      //清除旧红点
-      await page.evaluate(()=>{
-        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
-      });
-      await page.mouse.move(x,y);
-      //绘制红点
-      await page.evaluate(({px,py})=>{
-        const dot = document.createElement('div');
-        dot.style.position='fixed';
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        dot.style.width='22px';
-        dot.style.height='22px';
-        dot.style.background='red';
-        dot.style.borderRadius='50%';
-        dot.style.zIndex='9999999';
-        document.body.appendChild(dot);
-      },{px:x,py:y});
-      await sleep(500);
-      await page.screenshot({
-        path:`pointer_${idx+1}_${x}_${y}.png`,
-        omitBackground:true
-      });
-      console.log(`📷 已保存 pointer_${idx+1}_${x}_${y}.png`);
-    }
+    await page.mouse.move(p2x,p2y);
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:p2x,py:p2y});
+    await sleep(500);
+    await page.screenshot({path:'pos_970_1580.png', omitBackground:true});
+    console.log(`📷 已保存 pos_970_1580.png`);
 
     await page.close();
     console.log('✅【步骤3】执行完毕，页面关闭');
