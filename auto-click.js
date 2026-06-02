@@ -15,59 +15,66 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
   await ctx.addCookies(COOKIES);
 
   try {
-    //=====【合并原步骤1+步骤2：四轮开页-刷新-关页循环】=====
-    console.log('【合并步骤：开始四轮页面加载刷新流程】');
+    //=====【合并步骤：4轮：开页→等2s→刷新→等2s→关页→等2s】=====
+    console.log('【合并步骤：四轮页面初始化循环】');
     for(let round=0; round<4; round++){
-      console.log(`\n====第${round+1}轮页面加载====`);
+      console.log(`\n====第${round+1}轮页面====`);
       let pageTmp = await ctx.newPage();
       await pageTmp.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      console.log(`第${round+1}轮：页面打开完成，等待2s`);
       await sleep(2000);
-
       await pageTmp.reload({waitUntil:'domcontentloaded'});
-      console.log(`第${round+1}轮：页面刷新完成，等待2s`);
       await sleep(2000);
-
       await pageTmp.close();
-      console.log(`第${round+1}轮：页面关闭，等待2s`);
       await sleep(2000);
     }
-    console.log('【合并步骤：四轮页面循环全部结束】');
+    console.log('【四轮初始化全部结束】');
 
-    //=====【全新步骤3：打开页面→等待→点击1950,2002→筛选cursor:pointer元素→逐个红点截图】=====
+    //=====【步骤3】=====
     let page = await ctx.newPage();
-    console.log('\n【步骤3】正式打开目标页面');
+    console.log('\n【步骤3】打开业务页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    //固定坐标点击 1950,2002
+    //点击固定坐标1950,2002
     const clickX = 1950;
     const clickY = 2002;
     await page.mouse.click(clickX, clickY);
-    console.log(`✅ 已点击坐标(${clickX},${clickY})，等待2秒渲染页面`);
+    console.log(`✅ 点击(${clickX},${clickY})，等待弹窗/页面渲染2s`);
     await sleep(2000);
 
-    //筛选：hover鼠标变成手型 cursor:pointer 的所有元素(a/button/div等)
-    const pointerEls = await page.locator('*').filter({
-      has: page.locator('xpath=./self::*[contains(@style,"cursor:pointer") or contains(@style,"cursor: hand")]')
-    }).all();
-    console.log(`【步骤3】页面检测到手型可点击元素总数：${pointerEls.length}`);
+    //【改用页面内JS批量获取所有cursor:pointer手型元素（精准方案，绕开locator筛选bug）】
+    const pointerCoordList = await page.evaluate(()=>{
+      const allDom = Array.from(document.querySelectorAll('*'));
+      const res = [];
+      allDom.forEach(el=>{
+        const cssCursor = getComputedStyle(el).cursor;
+        //hover变手型：cursor=pointer / hand
+        if(cssCursor === 'pointer' || cssCursor === 'hand'){
+          const rect = el.getBoundingClientRect();
+          //过滤无效尺寸元素
+          if(rect.width>2 && rect.height>2){
+            res.push({
+              x: Math.round(rect.x + rect.width/2),
+              y: Math.round(rect.y + rect.height/2)
+            });
+          }
+        }
+      });
+      return res;
+    });
 
-    for(let idx=0; idx<pointerEls.length; idx++){
-      const el = pointerEls[idx];
-      const box = await el.boundingBox();
-      if(!box) continue;
-      const cx = Math.round(box.x + box.width/2);
-      const cy = Math.round(box.y + box.height/2);
-      console.log(`手型元素${idx+1} 中心点：X=${cx}, Y=${cy}`);
+    console.log(`✅ 成功筛选到手型(pointer)可点击区域总数：${pointerCoordList.length}`);
+    //逐个移动、红点、截图
+    for(let idx=0; idx<pointerCoordList.length; idx++){
+      const {x,y} = pointerCoordList[idx];
+      console.log(`手型区域${idx+1} 坐标 X:${x}, Y:${y}`);
 
-      //清理历史红点
+      //清空历史红点
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
-      //鼠标移动到中心
-      await page.mouse.move(cx, cy);
-      //绘制红色圆点标记
+      await page.mouse.move(x,y);
+      //画红点
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -79,19 +86,17 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.borderRadius='50%';
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
-      },{px:cx,py:cy});
+      },{px:x,py:py:y});
       await sleep(500);
-      //截图（omitBackground防超时）
       await page.screenshot({
-        path:`pointer_${idx+1}_${cx}_${cy}.png`,
+        path:`pointer_${idx+1}_${x}_${y}.png`,
         omitBackground:true
       });
-      console.log(`📷 已保存截图 pointer_${idx+1}_${cx}_${cy}.png`);
+      console.log(`📷 已保存 pointer_${idx+1}_${x}_${y}.png`);
     }
 
-    //全部遍历完毕关闭页面
     await page.close();
-    console.log('✅【步骤3】全部手型元素识别完毕，页面关闭');
+    console.log('✅ 步骤3全部完成，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
