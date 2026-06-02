@@ -1,5 +1,7 @@
 {
+  "name": "wps-auto",
+  "version": "1.0.0",
   "dependencies": {
-    "playwright": "^1.42.1"
+    "playwright": "^1.45.0"
   }
 }
