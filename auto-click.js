@@ -38,23 +38,23 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    // 点位列表
+    // 按你指定的全部坐标点位
     const posList = [
-      {x:1290,y:2515,name:'pos1_1290'},
-      {x:1435,y:2515,name:'pos2_1435'},
-      {x:1585,y:2515,name:'pos3_1585'},
-      {x:1735,y:2515,name:'pos4_1735'},
-      {x:1885,y:2515,name:'pos5_1885'},
-      {x:2030,y:2515,name:'pos6_2030'},
-      {x:2180,y:2515,name:'pos7_2180'},
-      {x:2450,y:2515,name:'pos8_2450'}
+      {x:948,y:1872,name:'pos1_948'},
+      {x:1098,y:1872,name:'pos2_1098'},
+      {x:1248,y:1872,name:'pos3_1248'},
+      {x:1398,y:1872,name:'pos4_1398'},
+      {x:1548,y:1872,name:'pos5_1548'},
+      {x:1698,y:1872,name:'pos6_1698'},
+      {x:1848,y:1872,name:'pos7_1848'},
+      {x:2113,y:1872,name:'pos8_2113'}
     ];
 
     // 逐个移动、画红点、截图
     for(const item of posList){
       const {x,y,name} = item;
       await page.mouse.move(x, y);
-      //绘制红点
+      //绘制红色标记圆点
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -69,21 +69,21 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       },{px:x,py:y});
       await sleep(600);
       await page.screenshot({path:`${name}.png`});
-      console.log(`📷 已保存 ${name}.png 红点截图`);
+      console.log(`📷 已保存 ${name}.png 红点标记截图`);
     }
 
-    //最终点击最后点位
-    const finalX = 2450;
-    const finalY = 2515;
-    await page.mouse.click(finalX, finalY);
-    console.log(`✅ 完成最终点击 (${finalX},${finalY})`);
+    // 最终在2113,1872点击
+    const clickX = 2113;
+    const clickY = 1872;
+    await page.mouse.click(clickX, clickY);
+    console.log(`✅ 执行目标点位点击 (${clickX},${clickY})`);
 
-    //点击后刷新页面
+    //点击后刷新、等待2秒关闭
     await page.reload({waitUntil:'domcontentloaded'});
-    console.log('🔄 点击完毕执行页面刷新');
+    console.log('🔄 点击完成，页面刷新');
     await sleep(2000);
     await page.close();
-    console.log('✅ 等待2秒后关闭页面');
+    console.log('✅ 等待完毕关闭页面');
 
   } catch (e) {
     console.error('运行异常：', e.message);
