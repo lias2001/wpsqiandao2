@@ -23,25 +23,29 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('【步骤1】关闭页面，等待2秒');
     await sleep(2000);
 
-    //步骤2：第二次打开页面【新增：遍历所有可点击链接、移光标、红点截图、打印坐标，不点击】
+    //步骤2：第二次打开页面，同时识别a链接+button按钮
     let page2 = await ctx.newPage();
     console.log('【步骤2】第二次打开页面');
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(2000);
 
-    // 获取全部可点击元素 a链接
-    const linkList = await page2.locator('a').all();
-    console.log(`【步骤2】页面一共检测到可点击链接数量：${linkList.length}`);
-    for(let i=0;i<linkList.length;i++){
-      const el = linkList[i];
+    //选择器：a超链接 + button按钮
+    const clickableList = await page2.locator('a,button').all();
+    console.log(`【步骤2】页面一共检测到可点击(a+button)总数：${clickableList.length}`);
+    for(let i=0;i<clickableList.length;i++){
+      const el = clickableList[i];
       const box = await el.boundingBox();
       if(!box) continue;
       const cx = Math.round(box.x + box.width/2);
       const cy = Math.round(box.y + box.height/2);
-      console.log(`链接${i+1} 中心点坐标：X=${cx}, Y=${cy}`);
+      console.log(`可点击元素${i+1} 中心点坐标：X=${cx}, Y=${cy}`);
 
-      //鼠标移动+画红点+截图，不点击
+      //清除上一轮红点
+      await page2.evaluate(()=>{
+        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      });
       await page2.mouse.move(cx, cy);
+      //绘制红点标记
       await page2.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -55,12 +59,16 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         document.body.appendChild(dot);
       },{px:cx,py:cy});
       await sleep(500);
-      await page2.screenshot({path:`link_${i+1}_${cx}_${cy}.png`});
-      console.log(`📷 已保存链接${i+1}截图 link_${i+1}_${cx}_${cy}.png`);
+      //omitBackground跳过字体等待，防超时
+      await page2.screenshot({
+        path:`elem_${i+1}_${cx}_${cy}.png`,
+        omitBackground:true
+      });
+      console.log(`📷 已保存元素${i+1}截图 elem_${i+1}_${cx}_${cy}.png`);
     }
 
     await page2.close();
-    console.log('【步骤2】链接遍历完毕，关闭页面，再等待2秒');
+    console.log('【步骤2】全部可点击元素遍历完毕，关闭页面，再等待2秒');
     await sleep(2000);
 
     //步骤3：第三次打开页面
@@ -86,7 +94,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       document.body.appendChild(dot);
     },{px:preX,py:preY});
     await sleep(600);
-    await page.screenshot({path:'pre_1596_1704.png'});
+    await page.screenshot({path:'pre_1596_1704.png', omitBackground:true});
     console.log(`📷 已保存前置点位截图 pre_1596_1704.png`);
     await page.mouse.click(preX, preY);
     console.log(`✅ 前置点位(${preX},${preY})点击完成`);
@@ -119,7 +127,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         document.body.appendChild(dot);
       },{px:x,py:y});
       await sleep(600);
-      await page.screenshot({path:`${name}.png`});
+      await page.screenshot({path:`${name}.png`, omitBackground:true});
       console.log(`📷 已保存 ${name}.png`);
     }
 
@@ -150,7 +158,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         document.body.appendChild(dot);
       },{px:btnX,py:btnY});
       await sleep(600);
-      await page.screenshot({path:'pop_receive_btn.png'});
+      await page.screenshot({path:'pop_receive_btn.png', omitBackground:true});
       console.log('📷 弹窗立即领取按钮已截图 pop_receive_btn.png');
       await receiveBtn.click();
       console.log('✅ 弹窗【立即领取】点击完成');
