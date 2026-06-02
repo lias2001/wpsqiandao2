@@ -38,7 +38,30 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    // 前置移动点位列表
+    //【新增前置步骤：先1596,1704移动、红点截图、点击】
+    const preX = 1596;
+    const preY = 1704;
+    await page.mouse.move(preX, preY);
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:preX,py:preY});
+    await sleep(600);
+    await page.screenshot({path:'pre_1596_1704.png'});
+    console.log(`📷 已保存前置点位截图 pre_1596_1704.png`);
+    await page.mouse.click(preX, preY);
+    console.log(`✅ 前置点位(${preX},${preY})点击完成`);
+    await sleep(1200);
+
+    // 原有后续移动点位列表
     const posList = [
       {x:1027,y:2002,name:'pos1_1027'},
       {x:1142,y:2002,name:'pos2_1142'},
