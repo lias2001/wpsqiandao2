@@ -8,7 +8,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     headless: true,
     args: ['--no-sandbox','--disable-dev-shm-usage']
   });
-  // 分辨率固定 3840 × 4320
   const ctx = await browser.newContext({
     viewport:{width:3840,height:4320},
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
@@ -33,26 +32,32 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('【步骤2】关闭页面，再等待2秒');
     await sleep(2000);
 
-    //步骤3：第三次打开页面，优先按比例坐标点击
+    //步骤3：第三次打开页面
     let page = await ctx.newPage();
-    console.log('【步骤3】第三次打开目标页面，优先比例坐标点击');
+    console.log('【步骤3】第三次打开目标页面');
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(4500);
 
-    // 横向65% 竖向66.5%
+    //横向65%、竖向66.5%
     const clickX = Math.round(3840 * 0.65);
     const clickY = Math.round(4320 * 0.665);
-    console.log(`计算点击坐标 X:${clickX}, Y:${clickY}`);
+    console.log(`鼠标移动至坐标 X:${clickX}, Y:${clickY}`);
 
-    // 优先坐标点击
+    //1.鼠标先移动到目标点位
+    await page.mouse.move(clickX, clickY);
+    await sleep(800);
+    //2.移动完立刻截图（能拍到鼠标光标）
+    await page.screenshot({path:'before_click_mouse.png'});
+    console.log('📷 已保存点击前带鼠标截图 before_click_mouse.png');
+    //3.优先坐标点击
     await page.mouse.click(clickX, clickY);
-    console.log(`✅ 优先坐标点击：(${clickX},${clickY}) 红框按钮`);
+    console.log(`✅ 坐标完成点击：(${clickX},${clickY})`);
 
-    // 点击完关闭页面
+    //点击完毕关闭页面
     await page.close();
     await sleep(2000);
 
-    // 校验页面，重新打开检查按钮是否还在
+    //校验页面
     let checkPage = await ctx.newPage();
     console.log('【校验步骤】重新打开页面，验证点击结果');
     await checkPage.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -61,7 +66,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     const checkHotBtn = checkPage.locator('div.hot-btn.pointer');
     const checkImgBtn = checkPage.locator('img.btn[src*="17491952468999a23257df8d522d6.png"]');
 
-    // 按钮存在=点击失败，截图
+    //校验失败才截图，成功不截图
     if(await checkHotBtn.isVisible({timeout:2000}) || await checkImgBtn.isVisible({timeout:2000})){
       console.log('⚠️ 校验失败：按钮仍然存在，坐标点击未生效');
       await checkPage.screenshot({path:'click_failed_snap.png'});
