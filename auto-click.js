@@ -35,29 +35,51 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    //按你要求完整点位顺序
+    //点位顺序和你需求一致
     const clickList = [
-      {x:1123,y:2010,name:'A'},
-      {x:770,y:1580,name:'B'},
-      {x:180,y:2000,name:'C'},
-      {x:300,y:2000,name:'D'},
-      {x:420,y:2000,name:'E'},
-      {x:540,y:2000,name:'F'},
-      {x:660,y:2000,name:'G'},
-      {x:780,y:2000,name:'H'},
-      {x:900,y:2000,name:'I'},
-      {x:1123,y:2010,name:'A重复'},
-      {x:770,y:1580,name:'B重复'}
+      {x:1123,y:2010,name:'pos_01_1123_2010'},
+      {x:770,y:1580,name:'pos_02_770_1580'},
+      {x:180,y:2000,name:'pos_03_180_2000'},
+      {x:300,y:2000,name:'pos_04_300_2000'},
+      {x:420,y:2000,name:'pos_05_420_2000'},
+      {x:540,y:2000,name:'pos_06_540_2000'},
+      {x:660,y:2000,name:'pos_07_660_2000'},
+      {x:780,y:2000,name:'pos_08_780_2000'},
+      {x:900,y:2000,name:'pos_09_900_2000'},
+      {x:1123,y:2010,name:'pos_10_1123_2010'},
+      {x:770,y:1580,name:'pos_11_770_1580'}
     ];
 
     for(const item of clickList){
       const {x,y,name} = item;
+      //1.移动鼠标
       await page.mouse.move(x,y);
-      //模拟真人长按点击
+      //2.清旧红点+画红点
+      await page.evaluate(()=>{
+        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      });
+      await page.evaluate(({px,py})=>{
+        const dot = document.createElement('div');
+        dot.style.position='fixed';
+        dot.style.left=px+'px';
+        dot.style.top=py+'px';
+        dot.style.width='22px';
+        dot.style.height='22px';
+        dot.style.background='red';
+        dot.style.borderRadius='50%';
+        dot.style.zIndex='9999999';
+        document.body.appendChild(dot);
+      },{px:x,py:y});
+      await sleep(500);
+      //3.红点截图（点击前）
+      await page.screenshot({path:`${name}.png`, omitBackground:true});
+      console.log(`📷 已保存截图 ${name}.png`);
+      //4.长按点击
       await page.mouse.down();
       await sleep(300);
       await page.mouse.up();
-      console.log(`✅${name} (${x},${y})点击完成，等待2秒`);
+      console.log(`✅ (${x},${y})点击完成，等待2秒`);
+      //5.等待2s
       await sleep(2000);
     }
 
