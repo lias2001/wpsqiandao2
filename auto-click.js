@@ -47,7 +47,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       {x:900,y:2000,name:'pos_09_900_2000'},
       {x:1123,y:2010,name:'pos_10_1123_2010'},
       {x:770,y:1580,name:'pos_11_770_1580'},
-      {x:1123,y:2110,name:'pos_01_1123_2110'},
+      {x:1123,y:2100,name:'pos_01_1123_2100'},
       {x:770,y:1680,name:'pos_02_770_1680'},
       {x:180,y:2100,name:'pos_03_180_2100'},
       {x:300,y:2100,name:'pos_04_300_2100'},
@@ -56,7 +56,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       {x:660,y:2100,name:'pos_07_660_2100'},
       {x:780,y:2100,name:'pos_08_780_2100'},
       {x:900,y:2100,name:'pos_09_900_2100'},
-      {x:1123,y:2110,name:'pos_10_1123_2110'},
+      {x:1123,y:2100,name:'pos_10_1123_2100'},
       {x:770,y:1680,name:'pos_11_770_1680'}
     ];
 
