@@ -36,30 +36,52 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await sleep(3000);
 
     const clickList = [
-      {x:180,y:2000},
-      {x:300,y:2000},
-      {x:420,y:2000},
-      {x:540,y:2000},
-      {x:660,y:2000},
-      {x:780,y:2000},
-      {x:900,y:2000},
-      {x:1123,y:2000},
-      {x:770,y:1580},
-      {x:180,y:2100},
-      {x:300,y:2100},
-      {x:420,y:2100},
-      {x:540,y:2100},
-      {x:660,y:2100},
-      {x:780,y:2100},
-      {x:900,y:2100},
-      {x:1123,y:2100},
-      {x:770,y:1580}
+      {x:1123,y:2000,name:'pos_01_1123_2000'},
+      {x:770,y:1580,name:'pos_02_770_1580'},
+      {x:180,y:2000,name:'pos_03_180_2000'},
+      {x:300,y:2000,name:'pos_04_300_2000'},
+      {x:420,y:2000,name:'pos_05_420_2000'},
+      {x:540,y:2000,name:'pos_06_540_2000'},
+      {x:660,y:2000,name:'pos_07_660_2000'},
+      {x:780,y:2000,name:'pos_08_780_2000'},
+      {x:900,y:2000,name:'pos_09_900_2000'},
+      {x:1123,y:2010,name:'pos_10_1123_2010'},
+      {x:770,y:1580,name:'pos_11_770_1580'},
+      {x:1123,y:2100,name:'pos_01_1123_2100'},
+      {x:770,y:1680,name:'pos_02_770_1680'},
+      {x:180,y:2100,name:'pos_03_180_2100'},
+      {x:300,y:2100,name:'pos_04_300_2100'},
+      {x:420,y:2100,name:'pos_05_420_2100'},
+      {x:540,y:2100,name:'pos_06_540_2100'},
+      {x:660,y:2100,name:'pos_07_660_2100'},
+      {x:780,y:2100,name:'pos_08_780_2100'},
+      {x:900,y:2100,name:'pos_09_900_2100'},
+      {x:1123,y:2100,name:'pos_10_1123_2100'},
+      {x:770,y:1580,name:'pos_11_770_1580'}
    ];
 
     for(const item of clickList){
-      const {x,y} = item;
+      const {x,y,name} = item;
       await page.mouse.move(x,y);
-      // 长按模拟点击
+      await page.evaluate(()=>{
+        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      });
+      await page.evaluate(({px,py})=>{
+        const dot = document.createElement('div');
+        dot.style.position='fixed';
+        dot.style.left=px+'px';
+        dot.style.top=py+'px';
+        dot.style.width='22px';
+        dot.style.height='22px';
+        dot.style.background='red';
+        dot.style.borderRadius='50%';
+        dot.style.zIndex='9999999';
+        document.body.appendChild(dot);
+      },{px:x,py:y});
+      await sleep(500);
+      await page.screenshot({path:`${name}.png`, omitBackground:true});
+      console.log(`📷 已保存截图 ${name}.png`);
+
       await page.mouse.down();
       await sleep(300);
       await page.mouse.up();
