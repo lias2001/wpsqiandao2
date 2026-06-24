@@ -1,6 +1,8 @@
 name: WPS Auto Click
 on:
   schedule:
+    - cron: '0 22 * * *'
+    - cron: '0 23 * * *'
     - cron: '00 10 * * *'
     - cron: '00 00 * * *'
   workflow_dispatch:
