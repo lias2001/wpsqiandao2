@@ -36,6 +36,15 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await sleep(3000);
 
     const clickList = [
+      {x:180,y:2000},
+      {x:300,y:2000},
+      {x:420,y:2000},
+      {x:540,y:2000},
+      {x:660,y:2000},
+      {x:780,y:2000},
+      {x:900,y:2000},
+      {x:1123,y:2000},
+      {x:770,y:1580},
       {x:180,y:2100},
       {x:300,y:2100},
       {x:420,y:2100},
