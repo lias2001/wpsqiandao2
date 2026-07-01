@@ -29,39 +29,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
     console.log('【四轮初始化全部结束】');
 
-    // 两套点位数组
-    const listY1800_2000 = [
-      {x:180,y:2000},
-      {x:300,y:2000},
-      {x:420,y:2000},
-      {x:540,y:2000},
-      {x:660,y:2000},
-      {x:780,y:2000},
-      {x:900,y:2000},
-      {x:1123,y:2000},
-      {x:770,y:1580},
-      {x:180,y:2100},
-      {x:300,y:2100},
-      {x:420,y:2100},
-      {x:540,y:2100},
-      {x:660,y:2100},
-      {x:780,y:2100},
-      {x:900,y:2100},
-      {x:1123,y:2100},
-      {x:770,y:1580}
-    ];
-    const listY1100_1300 = [
-      {x:180,y:1345},
-      {x:300,y:1345},
-      {x:420,y:1345},
-      {x:540,y:1345},
-      {x:660,y:1345},
-      {x:780,y:1345},
-      {x:900,y:1345},
-      {x:1123,y:1345},
-      {x:770,y:1580}
-    ];
-
     // ====================== 第1轮流程 ======================
     console.log('\n==== 开始第1轮完整点击流程 ====');
     let page = await ctx.newPage();
@@ -73,10 +40,9 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
     console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-    // 精准匹配class="left" 包含「连续打卡」文字的div，预先初始化targetY=null杜绝未定义报错
+    // 精准匹配class="left" 包含「连续打卡」文字的div
     const targetTextY = await page.evaluate(()=>{
       let targetY = null;
-      // 精准筛选 class="left" 的div，匹配连续打卡文本
       const targetDivs = Array.from(document.querySelectorAll('div.left'));
       for(const el of targetDivs){
         const text = el.textContent?.trim();
@@ -90,23 +56,27 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     });
     console.log(`ℹ 识别文字【连续打卡】垂直坐标Y: ${targetTextY}`);
 
-    // 2. 根据Y值选择对应点位列表
+    // 动态生成点位数组，Y=文字Y+182
     let useClickList = [];
     if(targetTextY !== null){
-      if(targetTextY >= 1800 && targetTextY <= 2000){
-        useClickList = listY1800_2000;
-        console.log(`✅ Y坐标${targetTextY} 在1800-2000区间，使用第一套点位`);
-      }else if(targetTextY >= 1100 && targetTextY <= 1300){
-        useClickList = listY1100_1300;
-        console.log(`✅ Y坐标${targetTextY} 在1100-1300区间，使用第二套点位`);
-      }else{
-        console.log(`⚠ Y坐标${targetTextY} 不在指定区间，无点位执行`);
-      }
+      const baseY = targetTextY + 182;
+      useClickList = [
+        {x:180,y:baseY},
+        {x:300,y:baseY},
+        {x:420,y:baseY},
+        {x:540,y:baseY},
+        {x:660,y:baseY},
+        {x:780,y:baseY},
+        {x:900,y:baseY},
+        {x:1123,y:baseY},
+        {x:770,y:1580}
+      ];
+      console.log(`✅ 已生成动态点位，基准Y=${baseY}`);
     }else{
       console.log(`⚠ 页面未找到文字【连续打卡】，跳过所有点击`);
     }
 
-    // 3. 循环执行选中点位：移动→红点→截图→点击→等待2s
+    // 循环执行选中点位：移动→红点→截图→点击→等待2s
     for(const item of useClickList){
       const {x,y} = item;
       await page.mouse.move(x,y);
@@ -152,7 +122,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第2轮同步精准匹配class=left连续打卡div
+    // 第2轮同步获取连续打卡Y坐标
     const targetTextY2 = await page2.evaluate(()=>{
       let targetY = null;
       const targetDivs = Array.from(document.querySelectorAll('div.left'));
@@ -170,15 +140,19 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     let useClickList2 = [];
     if(targetTextY2 !== null){
-      if(targetTextY2 >= 1800 && targetTextY2 <= 2000){
-        useClickList2 = listY1800_2000;
-        console.log(`✅ Y坐标${targetTextY2} 在1800-2000区间，使用第一套点位`);
-      }else if(targetTextY2 >= 1100 && targetTextY2 <= 1300){
-        useClickList2 = listY1100_1300;
-        console.log(`✅ Y坐标${targetTextY2} 在1100-1300区间，使用第二套点位`);
-      }else{
-        console.log(`⚠ Y坐标${targetTextY2} 不在指定区间，无点位执行`);
-      }
+      const baseY2 = targetTextY2 + 182;
+      useClickList2 = [
+        {x:180,y:baseY2},
+        {x:300,y:baseY2},
+        {x:420,y:baseY2},
+        {x:540,y:baseY2},
+        {x:660,y:baseY2},
+        {x:780,y:baseY2},
+        {x:900,y:baseY2},
+        {x:1123,y:baseY2},
+        {x:770,y:1580}
+      ];
+      console.log(`✅ 第2轮已生成动态点位，基准Y=${baseY2}`);
     }else{
       console.log(`⚠ 第2轮页面未找到文字【连续打卡】，跳过所有点击`);
     }
