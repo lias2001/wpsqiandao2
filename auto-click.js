@@ -1,53 +1,7 @@
 const { chromium } = require('playwright');
-const fs = require('fs');
-const path = require('path');
 const COOKIES = JSON.parse(process.env.WPS_COOKIES);
 const TARGET_URL = 'https://personal-act.wps.cn/rubik2/portal/HD2025031721339450/YM2025031721331326';
 const sleep = ms => new Promise(res => setTimeout(res, ms));
-
-// 截图目录
-const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
-if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
-
-/**
- * 在鼠标坐标(x,y)绘制红色圆点并截图，仅第一轮点击调用
- */
-async function screenshotWithMousePoint(page, x, y) {
-  // 修复：多参数打包成单个对象传入evaluate
-  await page.evaluate(({ px, py }) => {
-    // 移除旧红点
-    const oldDot = document.getElementById('mouse-point-marker');
-    if (oldDot) oldDot.remove();
-
-    const dot = document.createElement('div');
-    dot.id = 'mouse-point-marker';
-    Object.assign(dot.style, {
-      position: 'fixed',
-      left: `${px - 8}px`,
-      top: `${py - 8}px`,
-      width: '16px',
-      height: '16px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255,0,0,0.7)',
-      zIndex: '999999',
-      pointerEvents: 'none',
-      border: '2px solid #fff'
-    });
-    document.body.appendChild(dot);
-  }, { px: x, py: y });
-
-  // 截图保存，文件名带坐标
-  const fileName = `X${x}_Y${y}.png`;
-  const savePath = path.join(SCREENSHOT_DIR, fileName);
-  await page.screenshot({ path: savePath, fullPage: false });
-  console.log(`📸 已保存截图：${fileName}`);
-
-  // 移除红点
-  await page.evaluate(() => {
-    const dot = document.getElementById('mouse-point-marker');
-    if (dot) dot.remove();
-  });
-}
 
 (async () => {
   const browser = await chromium.launch({
@@ -75,12 +29,6 @@ async function screenshotWithMousePoint(page, x, y) {
     }
     console.log('【四轮初始化全部结束】');
 
-    //步骤3
-    let page = await ctx.newPage();
-    console.log('\n【步骤3】打开业务页面');
-    await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await sleep(3000);
-
     const clickList = [
       {x:180,y:2000},
       {x:300,y:2000},
@@ -102,35 +50,78 @@ async function screenshotWithMousePoint(page, x, y) {
       {x:770,y:1580}
     ];
 
-    // 整体流程循环执行2轮
-    for(let loop = 1; loop <= 2; loop++){
-      console.log(`\n==== 开始第${loop}轮完整点击流程 ====`);
-      for(const item of clickList){
-        const {x,y} = item;
-        await page.mouse.move(x,y);
+    // ====================== 第1轮流程 ======================
+    console.log('\n==== 开始第1轮完整点击流程 ====');
+    let page = await ctx.newPage();
+    console.log('【步骤3】打开业务页面');
+    await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(3000);
 
-        // 仅第一轮点击前，执行带红点截图
-        if (loop === 1) {
-          await screenshotWithMousePoint(page, x, y);
-        }
+    // 第1轮开始先全屏截图
+    await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
+    console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-        // 长按模拟点击
-        await page.mouse.down();
-        await sleep(300);
-        await page.mouse.up();
-        console.log(`✅ (${x},${y})点击完成，等待2秒`);
-        await sleep(2000);
-      }
-      console.log(`==== 第${loop}轮完整点击流程结束 ====`);
+    for(const item of clickList){
+      const {x,y} = item;
+      await page.mouse.move(x,y);
+      // 清除旧红点
+      await page.evaluate(()=>{
+        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      });
+      // 绘制红点
+      await page.evaluate(({px,py})=>{
+        const dot = document.createElement('div');
+        dot.style.position='fixed';
+        dot.style.left=px+'px';
+        dot.style.top=py+'px';
+        dot.style.width='22px';
+        dot.style.height='22px';
+        dot.style.background='red';
+        dot.style.borderRadius='50%';
+        dot.style.zIndex='9999999';
+        document.body.appendChild(dot);
+      },{px:x,py:y});
+      await sleep(500);
+      // 点击前截图
+      await page.screenshot({path:`loop1_click_${x}_${y}.png`, omitBackground:true});
+      console.log(`📷 第1轮点位截图 loop1_click_${x}_${y}.png`);
+
+      // 长按点击
+      await page.mouse.down();
+      await sleep(300);
+      await page.mouse.up();
+      console.log(`✅ (${x},${y})点击完成，等待2秒`);
+      await sleep(2000);
     }
-
+    console.log('==== 第1轮完整点击流程结束 ====');
+    // 第1轮结束关闭页面
     await page.close();
-    console.log('✅【步骤3】全部执行完毕，页面关闭');
+    console.log('✅ 第1轮页面已关闭，等待2秒后开启第2轮');
+    await sleep(2000);
+
+    // ====================== 第2轮流程（无截图） ======================
+    console.log('\n==== 开始第2轮完整点击流程 ====');
+    let page2 = await ctx.newPage();
+    console.log('【步骤3】重新打开业务页面');
+    await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(3000);
+
+    for(const item of clickList){
+      const {x,y} = item;
+      await page2.mouse.move(x,y);
+      // 长按点击，无红点、无截图
+      await page2.mouse.down();
+      await sleep(300);
+      await page2.mouse.up();
+      console.log(`✅ (${x},${y})点击完成，等待2秒`);
+      await sleep(2000);
+    }
+    console.log('==== 第2轮完整点击流程结束 ====');
+    await page2.close();
+    console.log('✅【步骤3】两轮全部执行完毕，页面关闭');
 
   } catch (e) {
     console.error('运行异常：', e.message);
-    // 打印完整堆栈方便排错
-    console.error(e.stack);
   } finally {
     await browser.close();
     console.log('浏览器已关闭，任务结束');
