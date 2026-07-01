@@ -1,7 +1,53 @@
 const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
 const COOKIES = JSON.parse(process.env.WPS_COOKIES);
 const TARGET_URL = 'https://personal-act.wps.cn/rubik2/portal/HD2025031721339450/YM2025031721331326';
 const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+// 截图目录
+const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
+if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+
+/**
+ * 在鼠标坐标(x,y)绘制红色圆点并截图，仅第一轮点击调用
+ */
+async function screenshotWithMousePoint(page, x, y) {
+  // 注入脚本画红点
+  await page.evaluate((px, py) => {
+    // 移除旧红点
+    const oldDot = document.getElementById('mouse-point-marker');
+    if (oldDot) oldDot.remove();
+
+    const dot = document.createElement('div');
+    dot.id = 'mouse-point-marker';
+    Object.assign(dot.style, {
+      position: 'fixed',
+      left: `${px - 8}px`,
+      top: `${py - 8}px`,
+      width: '16px',
+      height: '16px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255,0,0,0.7)',
+      zIndex: '999999',
+      pointerEvents: 'none',
+      border: '2px solid #fff'
+    });
+    document.body.appendChild(dot);
+  }, x, y);
+
+  // 截图保存，文件名带坐标
+  const fileName = `X${x}_Y${y}.png`;
+  const savePath = path.join(SCREENSHOT_DIR, fileName);
+  await page.screenshot({ path: savePath, fullPage: false });
+  console.log(`📸 已保存截图：${fileName}`);
+
+  // 移除红点
+  await page.evaluate(() => {
+    const dot = document.getElementById('mouse-point-marker');
+    if (dot) dot.remove();
+  });
+}
 
 (async () => {
   const browser = await chromium.launch({
@@ -62,6 +108,12 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       for(const item of clickList){
         const {x,y} = item;
         await page.mouse.move(x,y);
+
+        // 仅第一轮点击前，执行带红点截图
+        if (loop === 1) {
+          await screenshotWithMousePoint(page, x, y);
+        }
+
         // 长按模拟点击
         await page.mouse.down();
         await sleep(300);
