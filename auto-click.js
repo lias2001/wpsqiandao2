@@ -29,7 +29,8 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }
     console.log('【四轮初始化全部结束】');
 
-    const clickList = [
+    // 两套点位数组
+    const listY1800_2000 = [
       {x:180,y:2000},
       {x:300,y:2000},
       {x:420,y:2000},
@@ -49,6 +50,17 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       {x:1123,y:2100},
       {x:770,y:1580}
     ];
+    const listY1100_1300 = [
+      {x:180,y:1345},
+      {x:300,y:1345},
+      {x:420,y:1345},
+      {x:540,y:1345},
+      {x:660,y:1345},
+      {x:780,y:1345},
+      {x:900,y:1345},
+      {x:1123,y:1345},
+      {x:770,y:1580}
+    ];
 
     // ====================== 第1轮流程 ======================
     console.log('\n==== 开始第1轮完整点击流程 ====');
@@ -57,18 +69,51 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第1轮开始先全屏截图
+    // 第1轮初始页面截图
     await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
     console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-    for(const item of clickList){
+    // 1. 查找文字“连续打开”，获取文字所在Y坐标
+    const targetTextY = await page.evaluate(()=>{
+      const allNodes = Array.from(document.querySelectorAll('*'));
+      let targetY = null;
+      for(const el of allNodes){
+        const text = el.textContent?.trim();
+        if(text && text.includes('连续打开')){
+          const rect = el.getBoundingClientRect();
+          targetY = rect.y;
+          break;
+        }
+      }
+      return targetY;
+    });
+    console.log(`ℹ 识别文字【连续打开】垂直坐标Y: ${targetY}`);
+
+    // 2. 根据Y值选择对应点位列表
+    let useClickList = [];
+    if(targetY !== null){
+      if(targetY >= 1800 && targetY <= 2000){
+        useClickList = listY1800_2000;
+        console.log(`✅ Y坐标${targetY} 在1800-2000区间，使用第一套点位`);
+      }else if(targetY >= 1100 && targetY <= 1300){
+        useClickList = listY1100_1300;
+        console.log(`✅ Y坐标${targetY} 在1100-1300区间，使用第二套点位`);
+      }else{
+        console.log(`⚠ Y坐标${targetY} 不在指定区间，无点位执行`);
+      }
+    }else{
+      console.log(`⚠ 页面未找到文字【连续打开】，跳过所有点击`);
+    }
+
+    // 3. 循环执行选中点位：移动→红点→截图→点击→等待2s
+    for(const item of useClickList){
       const {x,y} = item;
       await page.mouse.move(x,y);
       // 清除旧红点
       await page.evaluate(()=>{
         document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
       });
-      // 绘制红点
+      // 绘制红点标记
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.style.position='fixed';
@@ -86,7 +131,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       await page.screenshot({path:`loop1_click_${x}_${y}.png`, omitBackground:true});
       console.log(`📷 第1轮点位截图 loop1_click_${x}_${y}.png`);
 
-      // 长按点击
+      // 长按模拟点击
       await page.mouse.down();
       await sleep(300);
       await page.mouse.up();
@@ -99,17 +144,47 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log('✅ 第1轮页面已关闭，等待2秒后开启第2轮');
     await sleep(2000);
 
-    // ====================== 第2轮流程（无截图） ======================
+    // ====================== 第2轮流程（无截图、无红点） ======================
     console.log('\n==== 开始第2轮完整点击流程 ====');
     let page2 = await ctx.newPage();
     console.log('【步骤3】重新打开业务页面');
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    for(const item of clickList){
+    // 第2轮同样识别文字选择点位，但不截图、不画红点
+    const targetTextY2 = await page2.evaluate(()=>{
+      const allNodes = Array.from(document.querySelectorAll('*'));
+      let targetY = null;
+      for(const el of allNodes){
+        const text = el.textContent?.trim();
+        if(text && text.includes('连续打开')){
+          const rect = el.getBoundingClientRect();
+          targetY = rect.y;
+          break;
+        }
+      }
+      return targetY;
+    });
+    console.log(`ℹ 第2轮识别文字【连续打开】垂直坐标Y: ${targetTextY2}`);
+
+    let useClickList2 = [];
+    if(targetTextY2 !== null){
+      if(targetTextY2 >= 1800 && targetTextY2 <= 2000){
+        useClickList2 = listY1800_2000;
+        console.log(`✅ Y坐标${targetTextY2} 在1800-2000区间，使用第一套点位`);
+      }else if(targetTextY2 >= 1100 && targetTextY2 <= 1300){
+        useClickList2 = listY1100_1300;
+        console.log(`✅ Y坐标${targetTextY2} 在1100-1300区间，使用第二套点位`);
+      }else{
+        console.log(`⚠ Y坐标${targetTextY2} 不在指定区间，无点位执行`);
+      }
+    }else{
+      console.log(`⚠ 第2轮页面未找到文字【连续打开】，跳过所有点击`);
+    }
+
+    for(const item of useClickList2){
       const {x,y} = item;
       await page2.mouse.move(x,y);
-      // 长按点击，无红点、无截图
       await page2.mouse.down();
       await sleep(300);
       await page2.mouse.up();
