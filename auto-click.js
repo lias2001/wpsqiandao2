@@ -13,8 +13,8 @@ if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: tr
  * 在鼠标坐标(x,y)绘制红色圆点并截图，仅第一轮点击调用
  */
 async function screenshotWithMousePoint(page, x, y) {
-  // 注入脚本画红点
-  await page.evaluate((px, py) => {
+  // 修复：多参数打包成单个对象传入evaluate
+  await page.evaluate(({ px, py }) => {
     // 移除旧红点
     const oldDot = document.getElementById('mouse-point-marker');
     if (oldDot) oldDot.remove();
@@ -34,7 +34,7 @@ async function screenshotWithMousePoint(page, x, y) {
       border: '2px solid #fff'
     });
     document.body.appendChild(dot);
-  }, x, y);
+  }, { px: x, py: y });
 
   // 截图保存，文件名带坐标
   const fileName = `X${x}_Y${y}.png`;
@@ -129,6 +129,8 @@ async function screenshotWithMousePoint(page, x, y) {
 
   } catch (e) {
     console.error('运行异常：', e.message);
+    // 打印完整堆栈方便排错
+    console.error(e.stack);
   } finally {
     await browser.close();
     console.log('浏览器已关闭，任务结束');
