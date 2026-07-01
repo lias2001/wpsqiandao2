@@ -73,13 +73,14 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
     console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-    // 1. 查找文字“连续打开”，获取文字所在Y坐标
+    // 精准匹配class="left" 包含「连续打卡」文字的div，预先初始化targetY=null杜绝未定义报错
     const targetTextY = await page.evaluate(()=>{
-      const allNodes = Array.from(document.querySelectorAll('*'));
       let targetY = null;
-      for(const el of allNodes){
+      // 精准筛选 class="left" 的div，匹配连续打卡文本
+      const targetDivs = Array.from(document.querySelectorAll('div.left'));
+      for(const el of targetDivs){
         const text = el.textContent?.trim();
-        if(text && text.includes('连续打开')){
+        if(text && text.includes('连续打卡')){
           const rect = el.getBoundingClientRect();
           targetY = rect.y;
           break;
@@ -87,22 +88,22 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       }
       return targetY;
     });
-    console.log(`ℹ 识别文字【连续打开】垂直坐标Y: ${targetY}`);
+    console.log(`ℹ 识别文字【连续打卡】垂直坐标Y: ${targetTextY}`);
 
     // 2. 根据Y值选择对应点位列表
     let useClickList = [];
-    if(targetY !== null){
-      if(targetY >= 1800 && targetY <= 2000){
+    if(targetTextY !== null){
+      if(targetTextY >= 1800 && targetTextY <= 2000){
         useClickList = listY1800_2000;
-        console.log(`✅ Y坐标${targetY} 在1800-2000区间，使用第一套点位`);
-      }else if(targetY >= 1100 && targetY <= 1300){
+        console.log(`✅ Y坐标${targetTextY} 在1800-2000区间，使用第一套点位`);
+      }else if(targetTextY >= 1100 && targetTextY <= 1300){
         useClickList = listY1100_1300;
-        console.log(`✅ Y坐标${targetY} 在1100-1300区间，使用第二套点位`);
+        console.log(`✅ Y坐标${targetTextY} 在1100-1300区间，使用第二套点位`);
       }else{
-        console.log(`⚠ Y坐标${targetY} 不在指定区间，无点位执行`);
+        console.log(`⚠ Y坐标${targetTextY} 不在指定区间，无点位执行`);
       }
     }else{
-      console.log(`⚠ 页面未找到文字【连续打开】，跳过所有点击`);
+      console.log(`⚠ 页面未找到文字【连续打卡】，跳过所有点击`);
     }
 
     // 3. 循环执行选中点位：移动→红点→截图→点击→等待2s
@@ -151,13 +152,13 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第2轮同样识别文字选择点位，但不截图、不画红点
+    // 第2轮同步精准匹配class=left连续打卡div
     const targetTextY2 = await page2.evaluate(()=>{
-      const allNodes = Array.from(document.querySelectorAll('*'));
       let targetY = null;
-      for(const el of allNodes){
+      const targetDivs = Array.from(document.querySelectorAll('div.left'));
+      for(const el of targetDivs){
         const text = el.textContent?.trim();
-        if(text && text.includes('连续打开')){
+        if(text && text.includes('连续打卡')){
           const rect = el.getBoundingClientRect();
           targetY = rect.y;
           break;
@@ -165,7 +166,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       }
       return targetY;
     });
-    console.log(`ℹ 第2轮识别文字【连续打开】垂直坐标Y: ${targetTextY2}`);
+    console.log(`ℹ 第2轮识别文字【连续打卡】垂直坐标Y: ${targetTextY2}`);
 
     let useClickList2 = [];
     if(targetTextY2 !== null){
@@ -179,7 +180,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         console.log(`⚠ Y坐标${targetTextY2} 不在指定区间，无点位执行`);
       }
     }else{
-      console.log(`⚠ 第2轮页面未找到文字【连续打开】，跳过所有点击`);
+      console.log(`⚠ 第2轮页面未找到文字【连续打卡】，跳过所有点击`);
     }
 
     for(const item of useClickList2){
