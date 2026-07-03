@@ -40,40 +40,18 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
     console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-    // ========== 新增前置点位流程 ==========
-    console.log('\n==== 执行第1轮前置点位操作 ====');
-    // 1. 移动 1245,320 → 红点截图 → 等待2s
-    const pre1X = 1245, pre1Y = 320;
-    await page.mouse.move(pre1X, pre1Y);
-    await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
-    });
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:pre1X,py:pre1Y});
-    await sleep(500);
-    await page.screenshot({path:`loop1_pre_1_${pre1X}_${pre1Y}.png`, omitBackground:true});
-    console.log(`📷 前置点位1截图 loop1_pre_1_${pre1X}_${pre1Y}.png`);
-    await sleep(2000);
-
-    // 2. 点击 1245,320 → 等待2s
+    // ========== 新增前置固定点位流程（截图后先执行这段）==========
+    console.log('\n==== 执行第1轮前置固定点位操作 ====');
+    // 1. 移动1245,320 → 点击 → 等待2s
+    await page.mouse.move(1245,320);
     await page.mouse.down();
     await sleep(300);
     await page.mouse.up();
-    console.log(`✅ 前置点位1(${pre1X},${pre1Y})点击完成，等待2秒`);
+    console.log(`✅ (1245,320)点击完成，等待2秒`);
     await sleep(2000);
 
-    // 3. 再次红点截图 1245,320 → 等待2s
-    await page.mouse.move(pre1X, pre1Y);
+    // 2. 370,390 红点截图再点击
+    await page.mouse.move(370,390);
     await page.evaluate(()=>{
       document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
     });
@@ -88,22 +66,18 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       dot.style.borderRadius='50%';
       dot.style.zIndex='9999999';
       document.body.appendChild(dot);
-    },{px:pre1X,py:pre1Y});
+    },{px:370,py:390});
     await sleep(500);
-    await page.screenshot({path:`loop1_pre_2_${pre1X}_${pre1Y}.png`, omitBackground:true});
-    console.log(`📷 前置点位1二次截图 loop1_pre_2_${pre1X}_${pre1Y}.png`);
-    await sleep(2000);
-
-    // 4. 点击 1140,390 → 等待2s
-    const pre2X = 1140, pre2Y = 390;
-    await page.mouse.move(pre2X, pre2Y);
+    await page.screenshot({path:`loop1_pre_370_390.png`, omitBackground:true});
+    console.log(`📷 前置点位截图 loop1_pre_370_390.png`);
     await page.mouse.down();
     await sleep(300);
     await page.mouse.up();
-    console.log(`✅ 前置点位2(${pre2X},${pre2Y})点击完成，等待2秒`);
+    console.log(`✅ (370,390)点击完成，等待2秒`);
     await sleep(2000);
 
-    // 5. 红点截图 1140,390
+    // 3.750,1500 红点截图再点击
+    await page.mouse.move(750,1500);
     await page.evaluate(()=>{
       document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
     });
@@ -118,13 +92,108 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       dot.style.borderRadius='50%';
       dot.style.zIndex='9999999';
       document.body.appendChild(dot);
-    },{px:pre2X,py:pre2Y});
+    },{px:750,py:1500});
     await sleep(500);
-    await page.screenshot({path:`loop1_pre_3_${pre2X}_${pre2Y}.png`, omitBackground:true});
-    console.log(`📷 前置点位2截图 loop1_pre_3_${pre2X}_${pre2Y}.png`);
-    console.log('==== 第1轮前置点位操作全部完成 ====\n');
+    await page.screenshot({path:`loop1_pre_750_1500.png`, omitBackground:true});
+    console.log(`📷 前置点位截图 loop1_pre_750_1500.png`);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (750,1500)点击完成，等待2秒`);
+    await sleep(2000);
 
-    // ====================== 识别连续打卡、动态生成点位流程 ======================
+    // 4.590,1500 红点截图再点击
+    await page.mouse.move(590,1500);
+    await page.evaluate(()=>{
+      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+    });
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:590,py:1500});
+    await sleep(500);
+    await page.screenshot({path:`loop1_pre_590_1500.png`, omitBackground:true});
+    console.log(`📷 前置点位截图 loop1_pre_590_1500.png`);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (590,1500)点击完成，等待2秒`);
+    await sleep(2000);
+
+    // 5.740,390 红点截图再点击
+    await page.mouse.move(740,390);
+    await page.evaluate(()=>{
+      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+    });
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:740,py:390});
+    await sleep(500);
+    await page.screenshot({path:`loop1_pre_740_390.png`, omitBackground:true});
+    console.log(`📷 前置点位截图 loop1_pre_740_390.png`);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (740,390)点击完成，等待2秒`);
+    await sleep(2000);
+
+    // 6.点击750,1500 无截图
+    await page.mouse.move(750,1500);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (750,1500)点击完成，等待2秒`);
+    await sleep(2000);
+
+    // 7.点击590,1500 无截图
+    await page.mouse.move(590,1500);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (590,1500)点击完成`);
+
+    // 8.点击1140,390
+    await page.mouse.move(1140,390);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (1140,390)点击完成，等待2秒`);
+    await sleep(2000);
+
+    // 9.点击750,1500
+    await page.mouse.move(750,1500);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (750,1500)点击完成，等待2秒`);
+    await sleep(2000);
+
+    // 10.点击590,1500
+    await page.mouse.move(590,1500);
+    await page.mouse.down();
+    await sleep(300);
+    await page.mouse.up();
+    console.log(`✅ (590,1500)前置固定点位全部执行完毕`);
+    console.log('==== 前置固定点位操作结束 ====\n');
+
+    // ========== 原有逻辑：识别连续打卡动态点位 ==========
     // 精准匹配class="left" 包含「连续打卡」文字的div
     const targetTextY = await page.evaluate(()=>{
       let targetY = null;
@@ -158,10 +227,10 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       ];
       console.log(`✅ 已生成动态点位，基准Y=${baseY}`);
     }else{
-      console.log(`⚠ 页面未找到文字【连续打卡】，跳过所有点击`);
+      console.log(`⚠ 页面未找到文字【连续打卡】，跳过所有动态点位点击`);
     }
 
-    // 循环执行选中点位：移动→红点→截图→点击→等待2s
+    // 循环执行动态点位：移动→红点→截图→点击→等待2s
     for(const item of useClickList){
       const {x,y} = item;
       await page.mouse.move(x,y);
@@ -185,7 +254,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       await sleep(500);
       // 点击前截图
       await page.screenshot({path:`loop1_click_${x}_${y}.png`, omitBackground:true});
-      console.log(`📷 第1轮点位截图 loop1_click_${x}_${y}.png`);
+      console.log(`📷 第1轮动态点位截图 loop1_click_${x}_${y}.png`);
 
       // 长按模拟点击
       await page.mouse.down();
@@ -207,7 +276,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第2轮同步获取连续打卡Y坐标
+    // 第2轮无前置固定点位流程，直接识别连续打卡Y坐标
     const targetTextY2 = await page2.evaluate(()=>{
       let targetY = null;
       const targetDivs = Array.from(document.querySelectorAll('div.left'));
