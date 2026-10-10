@@ -42,13 +42,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     let screenshotCount = 1;
 
-    // ========== 前置第一步：识别【往期记录】【申请试用】改用文本定位 ==========
-    console.log('\n==== 识别【往期记录】【申请试用】文字并截图 ====');
-
-    // ========== 往期记录：按文本查找 ==========
+    // ========== 只识别【往期记录】，取消申请试用 ==========
+    console.log('\n==== 识别【往期记录】 ====');
     let recordPos = null;
     try {
-      const recordLocator = page.locator('div:text("往期记录")');
+      const recordLocator = page.getByText('往期记录');
       await recordLocator.waitFor({state:'visible', timeout:5000});
       const box = await recordLocator.boundingBox();
       if(box){
@@ -57,15 +55,63 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     }catch(e){
       console.log(`⚠ 【往期记录】定位超时或不存在`);
     }
-    if(recordPos){
-      const {x,y} = recordPos;
-      console.log(`✅ 识别到【往期记录】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
+    if(!recordPos){
+      console.log('❌ 无法获取往期记录坐标，终止脚本');
+      await browser.close();
+      return;
+    }
+    const recX = recordPos.x;
+    const recY = recordPos.y;
+    console.log(`✅ 识别到【往期记录】，坐标：X=${recX.toFixed(2)}, Y=${recY.toFixed(2)}`);
+
+    // 往期记录本身红点截图（保留）
+    await page.mouse.move(recX, recY);
+    await page.evaluate(()=>{
+      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
+    });
+    await page.evaluate(({px,py})=>{
+      const dot = document.createElement('div');
+      dot.className = 'red-dot-marker';
+      dot.style.position='fixed';
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
+      dot.style.width='22px';
+      dot.style.height='22px';
+      dot.style.background='red';
+      dot.style.borderRadius='50%';
+      dot.style.zIndex='9999999';
+      document.body.appendChild(dot);
+    },{px:recX,py:recY});
+    await sleep(2000);
+    let filename = `第${screenshotCount}次截图_往期记录_${recX}_${recY}.png`;
+    await page.screenshot({path:filename, omitBackground:true});
+    console.log(`📷 ${filename}`);
+    screenshotCount++;
+
+    // ========== 【前置固定点位流程，按你要求的10步】 ==========
+    console.log('\n==== 执行前置10步点位操作 ====');
+    const steps = [
+      {x: recX - 200, y: recY + 150, name:"step1_往期记录X-200_Y+150"},
+      {x: 750, y: 1500, name:"step2_750_1500"},
+      {x: 590, y: 1500, name:"step3_590_1500"},
+      {x: recX + 160, y: recY + 150, name:"step4_往期记录X+160_Y+150"},
+      {x: 750, y: 1500, name:"step5_750_1500"},
+      {x: 590, y: 1500, name:"step6_590_1500"},
+      {x: recX + 240, y: recY + 80, name:"step7_往期记录X+240_Y+80"},
+      {x: recX + 160, y: recY + 150, name:"step8_往期记录X+160_Y+150"},
+      {x: 750, y: 1500, name:"step9_750_1500"},
+      {x: 590, y: 1500, name:"step10_590_1500"},
+    ];
+
+    for(const step of steps){
+      const {x,y,name} = step;
+      console.log(`\n👉 执行${name}，坐标(${x.toFixed(2)},${y.toFixed(2)})`);
       await page.mouse.move(x,y);
       // 清除旧红点
       await page.evaluate(()=>{
         document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
-      // 添加红色标记点
+      // 添加红点
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
         dot.className = 'red-dot-marker';
@@ -79,221 +125,18 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
       },{px:x,py:y});
-      await sleep(2000); //红点停留2秒截图
-      const filename = `第${screenshotCount}次截图_往期记录_${x}_${y}.png`;
+      await sleep(2000); //等待2秒，带红点截图
+      filename = `第${screenshotCount}次截图_${name}_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
       screenshotCount++;
-    }else{
-      console.log(`⚠ 未找到【往期记录】元素`);
+      // 点击
+      await page.mouse.down();
+      await sleep(300);
+      await page.mouse.up();
+      console.log(`✅ ${name} 点击完成`);
     }
-
-    // ========== 申请试用：按文本查找 ==========
-    let trialPos = null;
-    try {
-      const trialLocator = page.locator('div:text("申请试用")');
-      await trialLocator.waitFor({state:'visible', timeout:5000});
-      const box = await trialLocator.boundingBox();
-      if(box){
-        trialPos = {x: box.x + box.width/2, y: box.y + box.height/2};
-      }
-    }catch(e){
-      console.log(`⚠ 【申请试用】定位超时或不存在`);
-    }
-    if(trialPos){
-      const {x,y} = trialPos;
-      console.log(`✅ 识别到【申请试用】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
-      await page.mouse.move(x,y);
-      await page.evaluate(()=>{
-        document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
-      });
-      await page.evaluate(({px,py})=>{
-        const dot = document.createElement('div');
-        dot.className = 'red-dot-marker';
-        dot.style.position='fixed';
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        dot.style.width='22px';
-        dot.style.height='22px';
-        dot.style.background='red';
-        dot.style.borderRadius='50%';
-        dot.style.zIndex='9999999';
-        document.body.appendChild(dot);
-      },{px:x,py:y});
-      await sleep(2000); //红点停留2秒截图
-      const filename = `第${screenshotCount}次截图_申请试用_${x}_${y}.png`;
-      await page.screenshot({path:filename, omitBackground:true});
-      console.log(`📷 ${filename}`);
-      screenshotCount++;
-    }else{
-      console.log(`⚠ 未找到【申请试用】元素`);
-    }
-    console.log('====【往期记录】【申请试用】识别截图完成 ====\n');
-
-    // ========== 前置固定点位流程 ==========
-    console.log('==== 执行第1轮前置固定点位操作 ====');
-    // 1. 移动1245,320 → 点击 → 等待2s（无红点截图）
-    await page.mouse.move(1245,320);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (1245,320)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 2. 370,390 红点截图再点击
-    await page.mouse.move(370,390);
-    await page.evaluate(()=>{
-      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
-    });
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.className = 'red-dot-marker';
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:370,py:390});
-    await sleep(500);
-    let filename = `第${screenshotCount}次截图_坐标_370_390.png`;
-    await page.screenshot({path:filename, omitBackground:true});
-    console.log(`📷 ${filename}`);
-    screenshotCount++;
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (370,390)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 3.750,1500 红点截图再点击
-    await page.mouse.move(750,1500);
-    await page.evaluate(()=>{
-      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
-    });
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.className = 'red-dot-marker';
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:750,py:1500});
-    await sleep(500);
-    filename = `第${screenshotCount}次截图_坐标_750_1500.png`;
-    await page.screenshot({path:filename, omitBackground:true});
-    console.log(`📷 ${filename}`);
-    screenshotCount++;
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (750,1500)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 4.590,1500 红点截图再点击
-    await page.mouse.move(590,1500);
-    await page.evaluate(()=>{
-      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
-    });
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.className = 'red-dot-marker';
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:590,py:1500});
-    await sleep(500);
-    filename = `第${screenshotCount}次截图_坐标_590_1500.png`;
-    await page.screenshot({path:filename, omitBackground:true});
-    console.log(`📷 ${filename}`);
-    screenshotCount++;
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (590,1500)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 5.740,390 红点截图再点击
-    await page.mouse.move(740,390);
-    await page.evaluate(()=>{
-      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
-    });
-    await page.evaluate(({px,py})=>{
-      const dot = document.createElement('div');
-      dot.className = 'red-dot-marker';
-      dot.style.position='fixed';
-      dot.style.left=px+'px';
-      dot.style.top=py+'px';
-      dot.style.width='22px';
-      dot.style.height='22px';
-      dot.style.background='red';
-      dot.style.borderRadius='50%';
-      dot.style.zIndex='9999999';
-      document.body.appendChild(dot);
-    },{px:740,py:390});
-    await sleep(500);
-    filename = `第${screenshotCount}次截图_坐标_740_390.png`;
-    await page.screenshot({path:filename, omitBackground:true});
-    console.log(`📷 ${filename}`);
-    screenshotCount++;
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (740,390)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 6.点击750,1500 无截图
-    await page.mouse.move(750,1500);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (750,1500)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 7.点击590,1500 无截图
-    await page.mouse.move(590,1500);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (590,1500)点击完成`);
-
-    // 8.点击1140,390
-    await page.mouse.move(1140,390);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (1140,390)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 9.点击750,1500
-    await page.mouse.move(750,1500);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (750,1500)点击完成，等待2秒`);
-    await sleep(2000);
-
-    // 10.点击590,1500
-    await page.mouse.move(590,1500);
-    await page.mouse.down();
-    await sleep(300);
-    await page.mouse.up();
-    console.log(`✅ (590,1500)前置固定点位全部执行完毕`);
-    console.log('==== 前置固定点位操作结束 ====\n');
+    console.log('==== 前置10步点位全部执行完毕 ====\n');
 
     // ========== 识别连续打卡 div.left ==========
     const targetTextY = await page.evaluate(()=>{
@@ -334,7 +177,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     for(const item of useClickList){
       const {x,y} = item;
       await page.mouse.move(x,y);
-      // 【每次截图前，只删除我们自己创建的红点标记】
       await page.evaluate(()=>{
         document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
@@ -352,7 +194,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         document.body.appendChild(dot);
       },{px:x,py:y});
       await sleep(500);
-      const filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
+      filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
       screenshotCount++;
