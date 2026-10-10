@@ -54,6 +54,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     });
     if(recordPos){
       const {x,y} = recordPos;
+      console.log(`✅ 识别到【往期记录】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
       await page.mouse.move(x,y);
       // 【强制清空所有红点】
       await page.evaluate(()=>{
@@ -73,7 +74,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
       },{px:x,py:y});
-      await sleep(500);
+      await sleep(2000); // 红点停留2秒再截图
       const filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
@@ -91,6 +92,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     });
     if(trialPos){
       const {x,y} = trialPos;
+      console.log(`✅ 识别到【申请试用】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
       await page.mouse.move(x,y);
       await page.evaluate(()=>{
         document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
@@ -108,7 +110,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
       },{px:x,py:y});
-      await sleep(500);
+      await sleep(2000); // 红点停留2秒再截图
       const filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
