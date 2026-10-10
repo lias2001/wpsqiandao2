@@ -36,41 +36,33 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第1轮初始页面截图
+    // 第1轮初始页面截图（不计入序号）
     await page.screenshot({path:'loop1_start_page.png', omitBackground:true});
     console.log('📷 第1轮初始页面截图已保存 loop1_start_page.png');
 
-    let screenshotCount = 1; // 截图计数器，用于命名：第n次截图_坐标_X_Y
+    let screenshotCount = 1;
 
-    // ========== 新增：前置第一步：识别【往期记录】【申请试用】文字，带红点截图 ==========
+    // ========== 前置第一步：识别【往期记录】【申请试用】（使用你提供的class精准选择器） ==========
     console.log('\n==== 识别【往期记录】【申请试用】文字并截图 ====');
-    // 查找文字元素通用函数
-    const findTextY = async (text) => {
-      return await page.evaluate((searchText)=>{
-        let targetY = null;
-        const allNodes = Array.from(document.querySelectorAll('*'));
-        for(const el of allNodes){
-          const txt = el.textContent?.trim();
-          if(txt && txt.includes(searchText)){
-            const rect = el.getBoundingClientRect();
-            return {x: rect.left + rect.width/2, y: rect.top + rect.height/2};
-          }
-        }
-        return null;
-      }, text);
-    };
 
-    // 往期记录
-    const recordPos = await findTextY('往期记录');
+    // 往期记录：class="record"
+    const recordPos = await page.evaluate(()=>{
+      const el = document.querySelector('div.record');
+      if(!el) return null;
+      const rect = el.getBoundingClientRect();
+      return {x: rect.left + rect.width/2, y: rect.top + rect.height/2};
+    });
     if(recordPos){
       const {x,y} = recordPos;
       await page.mouse.move(x,y);
-      // 先清除页面上所有旧红点，只保留本次红点
+      // 【强制清空所有红点】
       await page.evaluate(()=>{
-        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+        document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
+      // 给红点增加专属class，方便精准清理，避免误删页面原有div
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
+        dot.className = 'red-dot-marker'; // 专属标记class
         dot.style.position='fixed';
         dot.style.left=px+'px';
         dot.style.top=py+'px';
@@ -87,19 +79,25 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log(`📷 ${filename}`);
       screenshotCount++;
     }else{
-      console.log(`⚠ 未找到文字【往期记录】`);
+      console.log(`⚠ 未找到【往期记录】div.record`);
     }
 
-    // 申请试用
-    const trialPos = await findTextY('申请试用');
+    // 申请试用：class="trial-btn"
+    const trialPos = await page.evaluate(()=>{
+      const el = document.querySelector('div.trial-btn');
+      if(!el) return null;
+      const rect = el.getBoundingClientRect();
+      return {x: rect.left + rect.width/2, y: rect.top + rect.height/2};
+    });
     if(trialPos){
       const {x,y} = trialPos;
       await page.mouse.move(x,y);
       await page.evaluate(()=>{
-        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+        document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
+        dot.className = 'red-dot-marker';
         dot.style.position='fixed';
         dot.style.left=px+'px';
         dot.style.top=py+'px';
@@ -116,7 +114,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log(`📷 ${filename}`);
       screenshotCount++;
     }else{
-      console.log(`⚠ 未找到文字【申请试用】`);
+      console.log(`⚠ 未找到【申请试用】div.trial-btn`);
     }
     console.log('====【往期记录】【申请试用】识别截图完成 ====\n');
 
@@ -133,10 +131,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     // 2. 370,390 红点截图再点击
     await page.mouse.move(370,390);
     await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
     });
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
+      dot.className = 'red-dot-marker';
       dot.style.position='fixed';
       dot.style.left=px+'px';
       dot.style.top=py+'px';
@@ -161,10 +160,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     // 3.750,1500 红点截图再点击
     await page.mouse.move(750,1500);
     await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
     });
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
+      dot.className = 'red-dot-marker';
       dot.style.position='fixed';
       dot.style.left=px+'px';
       dot.style.top=py+'px';
@@ -189,10 +189,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     // 4.590,1500 红点截图再点击
     await page.mouse.move(590,1500);
     await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
     });
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
+      dot.className = 'red-dot-marker';
       dot.style.position='fixed';
       dot.style.left=px+'px';
       dot.style.top=py+'px';
@@ -217,10 +218,11 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     // 5.740,390 红点截图再点击
     await page.mouse.move(740,390);
     await page.evaluate(()=>{
-      document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+      document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
     });
     await page.evaluate(({px,py})=>{
       const dot = document.createElement('div');
+      dot.className = 'red-dot-marker';
       dot.style.position='fixed';
       dot.style.left=px+'px';
       dot.style.top=py+'px';
@@ -281,8 +283,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     console.log(`✅ (590,1500)前置固定点位全部执行完毕`);
     console.log('==== 前置固定点位操作结束 ====\n');
 
-    // ========== 原有逻辑：识别连续打卡动态点位 ==========
-    // 精准匹配class="left" 包含「连续打卡」文字的div
+    // ========== 识别连续打卡 div.left ==========
     const targetTextY = await page.evaluate(()=>{
       let targetY = null;
       const targetDivs = Array.from(document.querySelectorAll('div.left'));
@@ -298,7 +299,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     });
     console.log(`ℹ 识别文字【连续打卡】垂直坐标Y: ${targetTextY}`);
 
-    // 动态生成点位数组，Y=文字Y+182
     let useClickList = [];
     if(targetTextY !== null){
       const baseY = targetTextY + 182;
@@ -318,16 +318,17 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log(`⚠ 页面未找到文字【连续打卡】，跳过所有动态点位点击`);
     }
 
-    // 循环执行动态点位：移动→红点→截图→点击→等待2s
+    // 循环执行动态点位：移动→清红点→新增当前红点→截图→点击→等待2s
     for(const item of useClickList){
       const {x,y} = item;
       await page.mouse.move(x,y);
-      // 清除旧红点，只绘制当前点位红点
+      // 【每次截图前，只删除我们自己创建的红点标记】
       await page.evaluate(()=>{
-        document.querySelectorAll('div[style*="border-radius:50%"]').forEach(d=>d.remove());
+        document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
+        dot.className = 'red-dot-marker';
         dot.style.position='fixed';
         dot.style.left=px+'px';
         dot.style.top=py+'px';
@@ -344,7 +345,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       console.log(`📷 ${filename}`);
       screenshotCount++;
 
-      // 长按模拟点击
       await page.mouse.down();
       await sleep(300);
       await page.mouse.up();
@@ -352,7 +352,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
       await sleep(2000);
     }
     console.log('==== 第1轮完整点击流程结束 ====');
-    // 第1轮结束关闭页面
     await page.close();
     console.log('✅ 第1轮页面已关闭，等待2秒后开启第2轮');
     await sleep(2000);
@@ -364,7 +363,6 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
     await page2.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await sleep(3000);
 
-    // 第2轮无前置识别、无前置点位流程，直接识别连续打卡Y坐标
     const targetTextY2 = await page2.evaluate(()=>{
       let targetY = null;
       const targetDivs = Array.from(document.querySelectorAll('div.left'));
