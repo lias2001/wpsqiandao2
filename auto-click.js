@@ -42,28 +42,33 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     let screenshotCount = 1;
 
-    // ========== 前置第一步：识别【往期记录】【申请试用】（使用你提供的class精准选择器） ==========
+    // ========== 前置第一步：识别【往期记录】【申请试用】改用文本定位 ==========
     console.log('\n==== 识别【往期记录】【申请试用】文字并截图 ====');
 
-    // 往期记录：class="record"
-    const recordPos = await page.evaluate(()=>{
-      const el = document.querySelector('div.record');
-      if(!el) return null;
-      const rect = el.getBoundingClientRect();
-      return {x: rect.left + rect.width/2, y: rect.top + rect.height/2};
-    });
+    // ========== 往期记录：按文本查找 ==========
+    let recordPos = null;
+    try {
+      const recordLocator = page.locator('div:text("往期记录")');
+      await recordLocator.waitFor({state:'visible', timeout:5000});
+      const box = await recordLocator.boundingBox();
+      if(box){
+        recordPos = {x: box.x + box.width/2, y: box.y + box.height/2};
+      }
+    }catch(e){
+      console.log(`⚠ 【往期记录】定位超时或不存在`);
+    }
     if(recordPos){
       const {x,y} = recordPos;
       console.log(`✅ 识别到【往期记录】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
       await page.mouse.move(x,y);
-      // 【强制清空所有红点】
+      // 清除旧红点
       await page.evaluate(()=>{
         document.querySelectorAll('div.red-dot-marker').forEach(d=>d.remove());
       });
-      // 给红点增加专属class，方便精准清理，避免误删页面原有div
+      // 添加红色标记点
       await page.evaluate(({px,py})=>{
         const dot = document.createElement('div');
-        dot.className = 'red-dot-marker'; // 专属标记class
+        dot.className = 'red-dot-marker';
         dot.style.position='fixed';
         dot.style.left=px+'px';
         dot.style.top=py+'px';
@@ -74,22 +79,27 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
       },{px:x,py:y});
-      await sleep(2000); // 红点停留2秒再截图
-      const filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
+      await sleep(2000); //红点停留2秒截图
+      const filename = `第${screenshotCount}次截图_往期记录_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
       screenshotCount++;
     }else{
-      console.log(`⚠ 未找到【往期记录】div.record`);
+      console.log(`⚠ 未找到【往期记录】元素`);
     }
 
-    // 申请试用：class="trial-btn"
-    const trialPos = await page.evaluate(()=>{
-      const el = document.querySelector('div.trial-btn');
-      if(!el) return null;
-      const rect = el.getBoundingClientRect();
-      return {x: rect.left + rect.width/2, y: rect.top + rect.height/2};
-    });
+    // ========== 申请试用：按文本查找 ==========
+    let trialPos = null;
+    try {
+      const trialLocator = page.locator('div:text("申请试用")');
+      await trialLocator.waitFor({state:'visible', timeout:5000});
+      const box = await trialLocator.boundingBox();
+      if(box){
+        trialPos = {x: box.x + box.width/2, y: box.y + box.height/2};
+      }
+    }catch(e){
+      console.log(`⚠ 【申请试用】定位超时或不存在`);
+    }
     if(trialPos){
       const {x,y} = trialPos;
       console.log(`✅ 识别到【申请试用】，坐标：X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
@@ -110,13 +120,13 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
         dot.style.zIndex='9999999';
         document.body.appendChild(dot);
       },{px:x,py:y});
-      await sleep(2000); // 红点停留2秒再截图
-      const filename = `第${screenshotCount}次截图_坐标_${x}_${y}.png`;
+      await sleep(2000); //红点停留2秒截图
+      const filename = `第${screenshotCount}次截图_申请试用_${x}_${y}.png`;
       await page.screenshot({path:filename, omitBackground:true});
       console.log(`📷 ${filename}`);
       screenshotCount++;
     }else{
-      console.log(`⚠ 未找到【申请试用】div.trial-btn`);
+      console.log(`⚠ 未找到【申请试用】元素`);
     }
     console.log('====【往期记录】【申请试用】识别截图完成 ====\n');
 
